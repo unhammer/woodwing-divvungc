@@ -1,0 +1,17 @@
+declare class EditorTextSdk {
+  static getTexts(): Array<string>;
+}
+
+declare module 'EditorTextSdk' {
+  declare var exports: Class<EditorTextSdk>;
+}
+
+declare class EditorUiSdk {
+  static createAction({ label: string, icon: string, click: Function }): string;
+}
+
+declare module 'EditorUiSdk' {
+  declare var exports: Class<EditorUiSdk>;
+}
+
+

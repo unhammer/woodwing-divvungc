@@ -1,0 +1,43 @@
+#+TITLE: Divvun spelling and grammar checker plugin for WoodWing ContentStation 10
+
+Currently this just lets you check the text and show spelling
+suggestions.
+
+Applying the suggestions back to the original text is on the TODO.
+
+#+ATTR_HTML: :alt demo
+[[file:demo.gif][file:demo.gif]]
+
+* Installing
+
+To use, put the contents of the =release= folder into the folder
+
+=/Applications/MAMP/htdocs/Enterprise/config/plugins/divvungc/=
+
+on the server; e.g.
+
+#+BEGIN_SRC sh
+rsync -avh release/ woodwingserver:/Applications/MAMP/htdocs/Enterprise/config/plugins/divvungc/
+# The trailing / here is important
+#+END_SRC
+
+
+Then add these lines to the =plugins= object of
+=/Applications/MAMP/htdocs/Enterprise/contentstation/config.js=:
+
+#+BEGIN_SRC js
+     printEditor: [
+       '../../config/plugins/divvungc/bundle.js'
+     ]
+#+END_SRC
+
+making it e.g.
+#+BEGIN_SRC js
+   plugins: {
+     contentStation: [
+     ],
+     printEditor: [
+       '../../config/plugins/divvungc/bundle.js'
+     ]
+   }
+#+END_SRC

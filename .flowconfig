@@ -1,0 +1,16 @@
+[ignore]
+<PROJECT_ROOT>/lib/.*
+<PROJECT_ROOT>/bundle.js
+<PROJECT_ROOT>/Enterprise
+.*/old/.*
+.*/node_modules/.*
+
+[include]
+
+[libs]
+interfaces/
+decls/
+
+[options]
+emoji=true
+

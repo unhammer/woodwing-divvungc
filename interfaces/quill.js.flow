@@ -1,0 +1,27 @@
+// Very minimal and loose type checking of Quill API
+
+declare function QuillModule(any:any): void;
+
+type Delta = { ops: Array<{retain:number}|{insert:string|{}}|{delete:number}> };
+
+declare class Quill {
+  constructor(container: string|HTMLElement, properties?: {}): Quill;
+  static import(module: string): QuillModule;
+  static register(module: QuillModule): void;
+  updateContents(delta: Delta, source: string): void;
+  focus(): void;
+  blur(): void;
+  scroll: any;
+  getLength(): number;
+  getText(): any;
+  formatText(index: number, length: number, format: string|Object, value: any, source?: string): void;
+  getContents(): any;
+  setContents(delta: Delta): void;
+  setText(str: string): void;
+  deleteText(index: number, length: number, source: string): void;
+  on(event: string, f: Function): void;
+}
+
+declare module 'quill' {
+  declare var exports: Class<Quill>;
+}
