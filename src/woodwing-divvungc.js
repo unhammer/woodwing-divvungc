@@ -164,26 +164,27 @@ class ErrorBlot extends Inline {
       tbody.append(tr_rep);
     });
 
-    // TODO: ignores?
-    var tr_ign =  $(document.createElement('tr')),
-    td_ign =  $(document.createElement('td')),
-    a_ign =  $(document.createElement('a'));
-    l10n().formatValue('hide_errtype').then(function(t){ a_ign.text(t); });
-    a_ign.attr("role", "option");
-    td_ign.append(a_ign);
-    td_ign.addClass("divvun-repmenu_ign");
-    td_ign.addClass("divvun-repmenu_nonfirst");
-    tr_ign.append(td_ign);
-    tbody.append(tr_ign);
-    a_ign.click({ err: err },
-                function(e) {
-                  var err = e.data.err;
-                  var igntyps = safeGetItem("igntyps", new Set());
-                  igntyps.add(err.typ);
-                  safeSetItem("igntyps", igntyps);
-                  editor.updateIgnored();
-                  editor.check();
-                });
+    if(false) { // ignores TODO
+      var tr_ign =  $(document.createElement('tr')),
+          td_ign =  $(document.createElement('td')),
+          a_ign =  $(document.createElement('a'));
+      l10n().formatValue('hide_errtype').then(function(t){ a_ign.text(t); });
+      a_ign.attr("role", "option");
+      td_ign.append(a_ign);
+      td_ign.addClass("divvun-repmenu_ign");
+      td_ign.addClass("divvun-repmenu_nonfirst");
+      tr_ign.append(td_ign);
+      tbody.append(tr_ign);
+      a_ign.click({ err: err },
+                  function(e) {
+                    var err = e.data.err;
+                    var igntyps = safeGetItem("igntyps", new Set());
+                    igntyps.add(err.typ);
+                    safeSetItem("igntyps", igntyps);
+                    editor.updateIgnored();
+                    editor.check();
+                  });
+    }
 
     $("#divvun-repmenu_tbl").append(tbody);
   };
@@ -269,7 +270,9 @@ var DivvunEditor = function(editorWrapper/*:HTMLElement*/, mode/*:string*/)/*:vo
 
   this.clearErrs();
   ErrorBlot.hiderep();
-  this.updateIgnored();
+  if(false) {                   // ignores TODO
+    this.updateIgnored();
+  }
   this.check();
 };
 
@@ -428,7 +431,7 @@ DivvunEditor.prototype.applyErrs = function(text, res/*:result*/, off/*:number*/
       rep: x[5],
       msg: x[4]
     };
-    if(igntyps.has(err.typ)) {
+    if(false && igntyps.has(err.typ)) { // ignores TODO
       return;
     }
     if(err.str !== text.substr(err.beg, err.len)) {
@@ -460,7 +463,7 @@ DivvunEditor.prototype.getFText = function() {
 
 DivvunEditor.prototype.checkXHR = [];
 DivvunEditor.prototype.servercheck = function(userpass/*:userpass*/, text/*:string*/, off/*:number*/, cb/*:cb*/, mode/*:string*/)/*:JQueryXHR*/ {
-  log("servercheck:");
+  console.log("servercheck", off, mode, text);
   // TODO: Should this be synchronous? We can't really change the text
   // after the user has typed unless the text still matches what we
   // sent.
@@ -474,6 +477,7 @@ DivvunEditor.prototype.servercheck = function(userpass/*:userpass*/, text/*:stri
       q: text
     },
     success: function(res) {
+      console.log("servercheck_success", off, res);
       cb(text, res, off);
     },
     error: function(jqXHR, textStatus/*:string*/, errXHR/*:string*/)/*:void*/ {
