@@ -201,7 +201,7 @@ var DivvunEditor = function(editorWrapper/*:HTMLElement*/, mode/*:string*/)/*:vo
   let self = this;
   this.editorWrapper = editorWrapper;
   let repmenu = $('<div id="divvun-repmenu" style="display:none" role="listbox"><div style="left: 0px;" id="divvun-repmenu_co" role="presentation"><table id="divvun-repmenu_tbl" role="presentation" cellspacing="0" border="0" cellpadding="0"></table></div></div>');
-  let editorDiv = $('<div>');
+  let editorDiv = $('<div spellcheck="false">');
   $(editorWrapper)
     .append(editorDiv)
     .append(repmenu);
