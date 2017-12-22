@@ -273,7 +273,7 @@ var DivvunEditor = function(editorWrapper/*:HTMLElement*/, mode/*:string*/)/*:vo
   if(false) {                   // ignores TODO
     this.updateIgnored();
   }
-  this.check();
+  // this.check(); // let caller fill us with text first!
 };
 
 DivvunEditor.prototype.exit = function()/*: void*/ {
@@ -821,6 +821,7 @@ var mkQuill = function() {
     ops: texts.map(function(t){ return { insert: t + "❡\n" }; })
   };
   editor.quill.setContents(delta);
+  editor.check();
   return editor;
 };
 

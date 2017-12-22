@@ -202,7 +202,7 @@ var DivvunEditor = function DivvunEditor(editorWrapper, mode) {
   var self = this;
   this.editorWrapper = editorWrapper;
   var repmenu = $('<div id="divvun-repmenu" style="display:none" role="listbox"><div style="left: 0px;" id="divvun-repmenu_co" role="presentation"><table id="divvun-repmenu_tbl" role="presentation" cellspacing="0" border="0" cellpadding="0"></table></div></div>');
-  var editorDiv = $('<div>');
+  var editorDiv = $('<div spellcheck="false">');
   $(editorWrapper).append(editorDiv).append(repmenu);
   var toolbarOptions = [['check', 'exit']];
   this.quill = new Quill(editorDiv.get()[0], {
@@ -265,7 +265,6 @@ var DivvunEditor = function DivvunEditor(editorWrapper, mode) {
   if (false) {
     this.updateIgnored();
   }
-  this.check();
 };
 
 DivvunEditor.prototype.exit = function () {
@@ -731,6 +730,7 @@ var mkQuill = function mkQuill() {
     })
   };
   editor.quill.setContents(delta);
+  editor.check();
   return editor;
 };
 
