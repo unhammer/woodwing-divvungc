@@ -157,7 +157,7 @@ button.divvun-loading-check::after {
     right: 0;
     position: absolute;
     background-color: white;
-    z-index: 19999; /* show it over cke_cke-writr; alternatively we could scroll it into view and then scroll back? */
+    z-index: 20; /* show it over cke_cke-writr; alternatively we could scroll it into view and then scroll back? */
 }
 .ql-editor {
     overflow-y: scroll;
