@@ -4,7 +4,7 @@
 "use strict";
 
 /* :: type reps = Array<string> */
-/* :: type err = {str: string, beg: number, end: number, len: number, typ: string, rep: Array<string>, msg: string, editorId: string} */
+/* :: type err = {str: string, beg: number, end: number, len: number, typ: string, rep: Array<string>, msg: string} */
 /* :: type errlist = Array<[string, number, number, string, string, Array<string>]> */
 /* :: type result = { text: string, errs: errlist } */
 /* :: type cb = (text: string, X:result, off: number) => void */
@@ -17,28 +17,28 @@ var debug = window.location.protocol === "file:";
 var log = debug ? console.log.bind(window.console) : function(_ignore) {};
 
 var l10n = function()/*:DocumentLocalization*/ {
-  if(document.l10n === undefined) {
-    console.warn("l20n.js failed?");
-    return {
-      // Return key unchanged for now if we have no l20n:
-      formatValue: function(v) { return new Promise(function(resolve,_){resolve(v);}); },
-      requestLanguages: function(_ignore/*:[string]*/){ }
-    };
-  }
-  // $FlowFixMe
-  return document.l10n;
+if(document.l10n === undefined) {
+console.warn("l20n.js failed?");
+return {
+    // Return key unchanged for now if we have no l20n:
+    formatValue: function(v) { return new Promise(function(resolve,_){resolve(v);}); },
+    requestLanguages: function(_ignore/*:[string]*/){ }
+};
+}
+// $FlowFixMe
+return document.l10n;
 };
 
 var initL10n = function(lang/*:string*/, dir/*:string*/)/*:void*/ {
-  l10n().requestLanguages([lang]);
-  l10n().formatValue('editor_placeholder')
-    .then(function(t) {
-      $('.ql-editor').attr('data-placeholder', t);
-    });
-  var el = $('<link/>');
-  el.attr('rel', 'stylesheet');
-  el.attr('href', dir + 'locales/' + lang + '.css');
-  $('head').append(el);
+l10n().requestLanguages([lang]);
+l10n().formatValue('editor_placeholder')
+.then(function(t) {
+    $('.ql-editor').attr('data-placeholder', t);
+});
+var el = $('<link/>');
+el.attr('rel', 'stylesheet');
+el.attr('href', dir + 'locales/' + lang + '.css');
+$('head').append(el);
 };
 
 
@@ -70,19 +70,15 @@ class ErrorBlot extends Inline {
           editor/*:DivvunEditor*/
          )/*:void*/
   {
-    console.log("showrep", beg, len, this, editor);
     var spanoff = $(this.domNode).offset(),
         newoff = { top:  spanoff.top+20,
                    left: spanoff.left },
         repmenu = $('#divvun-repmenu'),
         at_same_err = repmenu.offset().top == newoff.top && repmenu.offset().left == newoff.left;
-    console.log("repmenu:", repmenu, repmenu.is(":visible"), at_same_err);
     if(repmenu.is(":visible") && at_same_err) {
-      console.log("hide");
       ErrorBlot.hiderep();
     }
     else {
-      console.log("show");
       repmenu.show();
       repmenu.offset(newoff);
       if(!at_same_err) {
@@ -111,7 +107,6 @@ class ErrorBlot extends Inline {
              ) {
     var span = this.domNode,
         err/*:err*/ = $(span).data("error");
-    console.log("makerepmenu:", this, "error:", err);
     // We're looking at a new error, populate the table anew:
     $("#divvun-repmenu_tbl").empty();
     var tbody = $(document.createElement('tbody'));
@@ -160,7 +155,6 @@ class ErrorBlot extends Inline {
       td_rep.addClass("divvun-repmenu_rep");
       td_rep.addClass("divvun-repmenu_nonfirst");
       // has to be on td since <a> doesn't fill the whole td
-      console.log("on applying td_rep.click, editor=", editor);
       td_rep.click({ beg: beg,
                      len: len,
                      r: r
@@ -191,7 +185,6 @@ class ErrorBlot extends Inline {
                   editor.check();
                 });
 
-    console.log("append tbody", tbody);
     $("#divvun-repmenu_tbl").append(tbody);
   };
 
@@ -312,7 +305,6 @@ DivvunEditor.prototype.getModes = function()/*: void*/ {
 };
 
 DivvunEditor.prototype.replaceErr = function(e) {
-  console.log("replaceErr this", this);
   ErrorBlot.hiderep();
   var delta = { ops:[
     { retain: e.data.beg },
@@ -327,7 +319,6 @@ DivvunEditor.prototype.replaceErr = function(e) {
 };
 
 DivvunEditor.prototype.onSelectionChange = function(range, _oldRange, source) {
-  console.log("onSelectionChange", this, range, source);
   if(range != null && range.length === 0 && source === 'user') {
     var erroroffset = this.quill.scroll.descendant(ErrorBlot, range.index),
         error/*:ErrorBlot*/ = erroroffset[0],
@@ -336,7 +327,6 @@ DivvunEditor.prototype.onSelectionChange = function(range, _oldRange, source) {
       if($(error.domNode).data("error")) {
         var beg = range.index - offset,
             len = error.length();
-        console.log("onSelectionChange2", this);
         error.showrep(beg, len, this);
       }
       else {
@@ -367,7 +357,6 @@ DivvunEditor.prototype.clearErrs = function () {
 };
 
 DivvunEditor.prototype.removeIgnored = function (e) {
-  console.log("remove", e.data.typ);
   var igntyps = safeGetItem("igntyps", new Set());
   igntyps.delete(e.data.typ);
   safeSetItem("igntyps", igntyps);
@@ -437,8 +426,7 @@ DivvunEditor.prototype.applyErrs = function(text, res/*:result*/, off/*:number*/
       len: length,
       typ: x[3],
       rep: x[5],
-      msg: x[4],
-      editorId: this.editorWrapper.id
+      msg: x[4]
     };
     if(igntyps.has(err.typ)) {
       return;
@@ -855,4 +843,3 @@ var init = function() {
 };
 
 init();
-window.document.divvun = this;

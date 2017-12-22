@@ -74,18 +74,14 @@ var ErrorBlot = function (_Inline) {
   _createClass(ErrorBlot, [{
     key: "showrep",
     value: function showrep(beg, len, editor) {
-      console.log("showrep", beg, len, this, editor);
       var spanoff = $(this.domNode).offset(),
           newoff = { top: spanoff.top + 20,
         left: spanoff.left },
           repmenu = $('#divvun-repmenu'),
           at_same_err = repmenu.offset().top == newoff.top && repmenu.offset().left == newoff.left;
-      console.log("repmenu:", repmenu, repmenu.is(":visible"), at_same_err);
       if (repmenu.is(":visible") && at_same_err) {
-        console.log("hide");
         ErrorBlot.hiderep();
       } else {
-        console.log("show");
         repmenu.show();
         repmenu.offset(newoff);
         if (!at_same_err) {
@@ -98,7 +94,6 @@ var ErrorBlot = function (_Inline) {
     value: function makerepmenu(beg, len, editor) {
       var span = this.domNode,
           err = $(span).data("error");
-      console.log("makerepmenu:", this, "error:", err);
 
       $("#divvun-repmenu_tbl").empty();
       var tbody = $(document.createElement('tbody'));
@@ -134,7 +129,6 @@ var ErrorBlot = function (_Inline) {
         td_rep.addClass("divvun-repmenu_rep");
         td_rep.addClass("divvun-repmenu_nonfirst");
 
-        console.log("on applying td_rep.click, editor=", editor);
         td_rep.click({ beg: beg,
           len: len,
           r: r
@@ -164,7 +158,6 @@ var ErrorBlot = function (_Inline) {
         editor.check();
       });
 
-      console.log("append tbody", tbody);
       $("#divvun-repmenu_tbl").append(tbody);
     }
   }], [{
@@ -308,7 +301,6 @@ DivvunEditor.prototype.getModes = function () {
 };
 
 DivvunEditor.prototype.replaceErr = function (e) {
-  console.log("replaceErr this", this);
   ErrorBlot.hiderep();
   var delta = { ops: [{ retain: e.data.beg }, { delete: e.data.len }, { insert: e.data.r }] };
 
@@ -319,7 +311,6 @@ DivvunEditor.prototype.replaceErr = function (e) {
 };
 
 DivvunEditor.prototype.onSelectionChange = function (range, _oldRange, source) {
-  console.log("onSelectionChange", this, range, source);
   if (range != null && range.length === 0 && source === 'user') {
     var erroroffset = this.quill.scroll.descendant(ErrorBlot, range.index),
         error = erroroffset[0],
@@ -328,7 +319,6 @@ DivvunEditor.prototype.onSelectionChange = function (range, _oldRange, source) {
       if ($(error.domNode).data("error")) {
         var beg = range.index - offset,
             len = error.length();
-        console.log("onSelectionChange2", this);
         error.showrep(beg, len, this);
       } else {
         console.log("descendant ErrorBlot at", range.index, "had no data, clearing markup");
@@ -358,7 +348,6 @@ DivvunEditor.prototype.clearErrs = function () {
 };
 
 DivvunEditor.prototype.removeIgnored = function (e) {
-  console.log("remove", e.data.typ);
   var igntyps = safeGetItem("igntyps", new Set());
   igntyps.delete(e.data.typ);
   safeSetItem("igntyps", igntyps);
@@ -416,8 +405,7 @@ DivvunEditor.prototype.applyErrs = function (text, res, off) {
       len: length,
       typ: x[3],
       rep: x[5],
-      msg: x[4],
-      editorId: _this2.editorWrapper.id
+      msg: x[4]
     };
     if (igntyps.has(err.typ)) {
       return;
@@ -762,6 +750,5 @@ var init = function init() {
 };
 
 init();
-window.document.divvun = undefined;
 //# sourceMappingURL=woodwing-divvungc.js.map
 }());
