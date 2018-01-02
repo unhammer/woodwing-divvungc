@@ -198,6 +198,96 @@ ErrorBlot.tagName = 'span';
 ErrorBlot.className = 'divvun-error';
 Quill.register(ErrorBlot);
 
+var u8maxlen = function u8maxlen(str, max_B) {
+  var len = str.length;
+  var blen = 0;
+  var best = 0;
+  for (var i = 0; i < len; i++) {
+    var code = str.charCodeAt(i);
+    if (code > 0x7F && code <= 0x7FF) {
+      blen += 2;
+    } else if (code >= 0xD800 && code <= 0xDBFF) {
+      i++;
+      blen += 4;
+    } else if (code > 0x7FF && code <= 0xFFFF) {
+      blen += 3;
+    } else {
+      blen += 1;
+    }
+    if (blen <= max_B) {
+      best = i + 1;
+    } else {
+      break;
+    }
+  }
+  return best;
+};
+
+var test_u8maxlen = function test_u8maxlen() {
+  assert(0 === u8maxlen("", 0), "0");
+  assert(0 === u8maxlen("a", 0), "a0");
+  assert(0 === u8maxlen("æ", 0), "æ0");
+  assert(0 === u8maxlen("æøå", 0), "æøå0");
+  assert(0 === u8maxlen("aæøå", 0), "aæøå0");
+  assert(0 === u8maxlen("", 1), "1");
+  assert(1 === u8maxlen("a", 1), "a1");
+  assert(0 === u8maxlen("æ", 1), "æ1");
+  assert(0 === u8maxlen("æøå", 1), "æøå1");
+  assert(1 === u8maxlen("aæøå", 1), "aæøå1");
+  assert(0 === u8maxlen("", 2), "2");
+  assert(1 === u8maxlen("a", 2), "a2");
+  assert(1 === u8maxlen("æ", 2), "æ2");
+  assert(1 === u8maxlen("æøå", 2), "æøå2");
+  assert(1 === u8maxlen("aæøå", 2), "aæøå2");
+  assert(2 === u8maxlen("aaøå", 2), "aaæøå2");
+  assert(0 === u8maxlen("", 3), "3");
+  assert(1 === u8maxlen("a", 3), "a3");
+  assert(1 === u8maxlen("æ", 3), "æ3");
+  assert(1 === u8maxlen("æøå", 3), "æøå3");
+  assert(2 === u8maxlen("aæøå", 3), "aæøå3");
+  assert(2 === u8maxlen("aaøå", 3), "aaæøå3");
+  assert(0 === u8maxlen("𝌆", 0), "𝌆0");
+  assert(0 === u8maxlen("𝌆", 1), "𝌆1");
+  assert(0 === u8maxlen("𝌆", 2), "𝌆2");
+  assert(0 === u8maxlen("𝌆", 3), "𝌆3");
+  assert(2 === u8maxlen("𝌆", 4), "𝌆4");
+  assert(2 === u8maxlen("𝌆", 5), "𝌆5");
+  return "all good";
+};
+
+var assert = function assert(condition, message) {
+  if (!condition) {
+    message = message || "Assertion failed";
+    throw new Error(message);
+  }
+};
+
+var APYMAXBYTES = 4096;
+
+var lastSentenceEnd = function lastSentenceEnd(str) {
+  var sep = /[.:!]\s/g;
+  var found = 0;
+  for (var res = sep.exec(str); res !== null; res = sep.exec(str)) {
+    found = res.index + res.length;
+  }
+  return found;
+};
+
+var textCutOff = function textCutOff(str, max_B) {
+  var len = str.length;
+  var maxu8 = u8maxlen(str, max_B);
+
+  if (len <= maxu8) {
+    return len;
+  }
+
+  var minu8 = Math.floor(0.8 * maxu8);
+  var sub = str.substring(minu8, maxu8);
+  var found = lastSentenceEnd(sub);
+  console.log(minu8, maxu8, found + minu8 + 1);
+  return minu8 + found + 1;
+};
+
 var DivvunEditor = function DivvunEditor(editorWrapper, mode) {
   var self = this;
   this.editorWrapper = editorWrapper;
@@ -567,96 +657,6 @@ var initSpinner = function initSpinner(editorElement) {
     $(".ql-check").removeClass("glyphicon glyphicon-refresh spinning");
     $(".ql-check").removeClass("divvun-loading-check");
   });
-};
-
-var u8maxlen = function u8maxlen(str, max_B) {
-  var len = str.length;
-  var blen = 0;
-  var best = 0;
-  for (var i = 0; i < len; i++) {
-    var code = str.charCodeAt(i);
-    if (code > 0x7F && code <= 0x7FF) {
-      blen += 2;
-    } else if (code >= 0xD800 && code <= 0xDBFF) {
-      i++;
-      blen += 4;
-    } else if (code > 0x7FF && code <= 0xFFFF) {
-      blen += 3;
-    } else {
-      blen += 1;
-    }
-    if (blen <= max_B) {
-      best = i + 1;
-    } else {
-      break;
-    }
-  }
-  return best;
-};
-
-var test_u8maxlen = function test_u8maxlen() {
-  assert(0 === u8maxlen("", 0), "0");
-  assert(0 === u8maxlen("a", 0), "a0");
-  assert(0 === u8maxlen("æ", 0), "æ0");
-  assert(0 === u8maxlen("æøå", 0), "æøå0");
-  assert(0 === u8maxlen("aæøå", 0), "aæøå0");
-  assert(0 === u8maxlen("", 1), "1");
-  assert(1 === u8maxlen("a", 1), "a1");
-  assert(0 === u8maxlen("æ", 1), "æ1");
-  assert(0 === u8maxlen("æøå", 1), "æøå1");
-  assert(1 === u8maxlen("aæøå", 1), "aæøå1");
-  assert(0 === u8maxlen("", 2), "2");
-  assert(1 === u8maxlen("a", 2), "a2");
-  assert(1 === u8maxlen("æ", 2), "æ2");
-  assert(1 === u8maxlen("æøå", 2), "æøå2");
-  assert(1 === u8maxlen("aæøå", 2), "aæøå2");
-  assert(2 === u8maxlen("aaøå", 2), "aaæøå2");
-  assert(0 === u8maxlen("", 3), "3");
-  assert(1 === u8maxlen("a", 3), "a3");
-  assert(1 === u8maxlen("æ", 3), "æ3");
-  assert(1 === u8maxlen("æøå", 3), "æøå3");
-  assert(2 === u8maxlen("aæøå", 3), "aæøå3");
-  assert(2 === u8maxlen("aaøå", 3), "aaæøå3");
-  assert(0 === u8maxlen("𝌆", 0), "𝌆0");
-  assert(0 === u8maxlen("𝌆", 1), "𝌆1");
-  assert(0 === u8maxlen("𝌆", 2), "𝌆2");
-  assert(0 === u8maxlen("𝌆", 3), "𝌆3");
-  assert(2 === u8maxlen("𝌆", 4), "𝌆4");
-  assert(2 === u8maxlen("𝌆", 5), "𝌆5");
-  return "all good";
-};
-
-var assert = function assert(condition, message) {
-  if (!condition) {
-    message = message || "Assertion failed";
-    throw new Error(message);
-  }
-};
-
-var APYMAXBYTES = 4096;
-
-var lastSentenceEnd = function lastSentenceEnd(str) {
-  var sep = /[.:!]\s/g;
-  var found = 0;
-  for (var res = sep.exec(str); res !== null; res = sep.exec(str)) {
-    found = res.index + res.length;
-  }
-  return found;
-};
-
-var textCutOff = function textCutOff(str, max_B) {
-  var len = str.length;
-  var maxu8 = u8maxlen(str, max_B);
-
-  if (len <= maxu8) {
-    return len;
-  }
-
-  var minu8 = Math.floor(0.8 * maxu8);
-  var sub = str.substring(minu8, maxu8);
-  var found = lastSentenceEnd(sub);
-  console.log(minu8, maxu8, found + minu8 + 1);
-  return minu8 + found + 1;
 };
 
 var groupBy = function groupBy(list, keyGetter) {

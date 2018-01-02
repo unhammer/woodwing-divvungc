@@ -197,6 +197,115 @@ Quill.register(ErrorBlot);
 
 
 
+/**
+ * Return max index i of str such that str.substr(0, i) is smaller
+ * than max_B bytes when encoded in UTF-8
+ */
+var u8maxlen = function(str/*:string*/, max_B/*:number*/)/*:number*/ {
+  let len = str.length;
+  let blen = 0;
+  var best = 0;
+  for (let i = 0; i < len; i++) {
+    let code = str.charCodeAt(i);
+    if (code > 0x7F && code <= 0x7FF) {
+      blen += 2;                // e.g. å
+    }
+    else if (code >= 0xD800 && code <= 0xDBFF) {
+      i++;       // first part of surrogate pair, e.g. 𝌆, so skip other half
+      blen += 4; // the whole thing is 4 UTF-8 bytes
+    }
+    else if (code > 0x7FF && code <= 0xFFFF) {
+      blen += 3;                // e.g. ☃
+    }
+    else {
+      blen += 1;                // e.g. a
+    }
+    if(blen <= max_B) {
+      best = i+1;
+    }
+    else {
+      break;
+    }
+  }
+  return best;
+};
+
+var test_u8maxlen = function() {
+  assert(0 === u8maxlen(""    , 0), "0");
+  assert(0 === u8maxlen("a"   , 0), "a0");
+  assert(0 === u8maxlen("æ"   , 0), "æ0");
+  assert(0 === u8maxlen("æøå" , 0), "æøå0");
+  assert(0 === u8maxlen("aæøå", 0), "aæøå0");
+  assert(0 === u8maxlen(""    , 1), "1");
+  assert(1 === u8maxlen("a"   , 1), "a1");
+  assert(0 === u8maxlen("æ"   , 1), "æ1");
+  assert(0 === u8maxlen("æøå" , 1), "æøå1");
+  assert(1 === u8maxlen("aæøå", 1), "aæøå1");
+  assert(0 === u8maxlen(""    , 2), "2");
+  assert(1 === u8maxlen("a"   , 2), "a2");
+  assert(1 === u8maxlen("æ"   , 2), "æ2");
+  assert(1 === u8maxlen("æøå" , 2), "æøå2");
+  assert(1 === u8maxlen("aæøå", 2), "aæøå2");
+  assert(2 === u8maxlen("aaøå", 2), "aaæøå2");
+  assert(0 === u8maxlen(""    , 3), "3");
+  assert(1 === u8maxlen("a"   , 3), "a3");
+  assert(1 === u8maxlen("æ"   , 3), "æ3");
+  assert(1 === u8maxlen("æøå" , 3), "æøå3");
+  assert(2 === u8maxlen("aæøå", 3), "aæøå3");
+  assert(2 === u8maxlen("aaøå", 3), "aaæøå3");
+  assert(0 === u8maxlen("𝌆"   , 0), "𝌆0");
+  assert(0 === u8maxlen("𝌆"   , 1), "𝌆1");
+  assert(0 === u8maxlen("𝌆"   , 2), "𝌆2");
+  assert(0 === u8maxlen("𝌆"   , 3), "𝌆3");
+  assert(2 === u8maxlen("𝌆"   , 4), "𝌆4");
+  assert(2 === u8maxlen("𝌆"   , 5), "𝌆5");
+  return "all good";
+};
+
+var assert = function(condition, message) {
+  if (!condition) {
+    message = message || "Assertion failed";
+    throw new Error(message);
+  }
+};
+
+let APYMAXBYTES = 4096; // TODO: APY endpoint to return select.PIPE_BUF ?
+
+var lastSentenceEnd = function(str) {
+  let sep = /[.:!]\s/g;
+  let found = 0;
+  for(let res = sep.exec(str);
+      res !== null;
+      res = sep.exec(str)) {
+    found = res.index + res.length;
+  }
+  return found;
+};
+
+/* Find a length `i` s.t. `str.substr(0, i)` takes less than `max`
+ * bytes when encoded in UTF-8, but more than `max*.8`, and preferably
+ * ends with ". "
+ */
+var textCutOff = function(str/*:string*/, max_B/*:number*/)/*:number*/ {
+  let len = str.length;
+  let maxu8 = u8maxlen(str, max_B);
+  // if it's shorter anyway, this is trivial:
+  if(len <= maxu8) {
+    return len;
+  }
+  // we'd like to find a cut-off point that looks like a sentence boundary
+  // but not if that means cutting off too far back, so start
+  // searching near the end:
+  let minu8 = Math.floor(0.8 * maxu8);
+  let sub = str.substring(minu8, maxu8);
+  let found = lastSentenceEnd(sub);
+  console.log(minu8, maxu8, found+minu8+1);
+  return minu8 + found + 1;     // +1 because we want length, not index
+};
+
+
+
+
 var DivvunEditor = function(editorWrapper/*:HTMLElement*/, mode/*:string*/)/*:void*/ {
   let self = this;
   this.editorWrapper = editorWrapper;
@@ -628,114 +737,6 @@ var initSpinner = function(editorElement/*:string|HTMLElement*/) {
         $(".ql-check").removeClass("glyphicon glyphicon-refresh spinning");
         $(".ql-check").removeClass("divvun-loading-check");
       });
-};
-
-
-
-/**
- * Return max index i of str such that str.substr(0, i) is smaller
- * than max_B bytes when encoded in UTF-8
- */
-var u8maxlen = function(str/*:string*/, max_B/*:number*/)/*:number*/ {
-  let len = str.length;
-  let blen = 0;
-  var best = 0;
-  for (let i = 0; i < len; i++) {
-    let code = str.charCodeAt(i);
-    if (code > 0x7F && code <= 0x7FF) {
-      blen += 2;                // e.g. å
-    }
-    else if (code >= 0xD800 && code <= 0xDBFF) {
-      i++;       // first part of surrogate pair, e.g. 𝌆, so skip other half
-      blen += 4; // the whole thing is 4 UTF-8 bytes
-    }
-    else if (code > 0x7FF && code <= 0xFFFF) {
-      blen += 3;                // e.g. ☃
-    }
-    else {
-      blen += 1;                // e.g. a
-    }
-    if(blen <= max_B) {
-      best = i+1;
-    }
-    else {
-      break;
-    }
-  }
-  return best;
-};
-
-var test_u8maxlen = function() {
-  assert(0 === u8maxlen(""    , 0), "0");
-  assert(0 === u8maxlen("a"   , 0), "a0");
-  assert(0 === u8maxlen("æ"   , 0), "æ0");
-  assert(0 === u8maxlen("æøå" , 0), "æøå0");
-  assert(0 === u8maxlen("aæøå", 0), "aæøå0");
-  assert(0 === u8maxlen(""    , 1), "1");
-  assert(1 === u8maxlen("a"   , 1), "a1");
-  assert(0 === u8maxlen("æ"   , 1), "æ1");
-  assert(0 === u8maxlen("æøå" , 1), "æøå1");
-  assert(1 === u8maxlen("aæøå", 1), "aæøå1");
-  assert(0 === u8maxlen(""    , 2), "2");
-  assert(1 === u8maxlen("a"   , 2), "a2");
-  assert(1 === u8maxlen("æ"   , 2), "æ2");
-  assert(1 === u8maxlen("æøå" , 2), "æøå2");
-  assert(1 === u8maxlen("aæøå", 2), "aæøå2");
-  assert(2 === u8maxlen("aaøå", 2), "aaæøå2");
-  assert(0 === u8maxlen(""    , 3), "3");
-  assert(1 === u8maxlen("a"   , 3), "a3");
-  assert(1 === u8maxlen("æ"   , 3), "æ3");
-  assert(1 === u8maxlen("æøå" , 3), "æøå3");
-  assert(2 === u8maxlen("aæøå", 3), "aæøå3");
-  assert(2 === u8maxlen("aaøå", 3), "aaæøå3");
-  assert(0 === u8maxlen("𝌆"   , 0), "𝌆0");
-  assert(0 === u8maxlen("𝌆"   , 1), "𝌆1");
-  assert(0 === u8maxlen("𝌆"   , 2), "𝌆2");
-  assert(0 === u8maxlen("𝌆"   , 3), "𝌆3");
-  assert(2 === u8maxlen("𝌆"   , 4), "𝌆4");
-  assert(2 === u8maxlen("𝌆"   , 5), "𝌆5");
-  return "all good";
-};
-
-var assert = function(condition, message) {
-  if (!condition) {
-    message = message || "Assertion failed";
-    throw new Error(message);
-  }
-};
-
-let APYMAXBYTES = 4096; // TODO: APY endpoint to return select.PIPE_BUF ?
-
-var lastSentenceEnd = function(str) {
-  let sep = /[.:!]\s/g;
-  let found = 0;
-  for(let res = sep.exec(str);
-      res !== null;
-      res = sep.exec(str)) {
-    found = res.index + res.length;
-  }
-  return found;
-};
-
-/* Find a length `i` s.t. `str.substr(0, i)` takes less than `max`
- * bytes when encoded in UTF-8, but more than `max*.8`, and preferably
- * ends with ". "
- */
-var textCutOff = function(str/*:string*/, max_B/*:number*/)/*:number*/ {
-  let len = str.length;
-  let maxu8 = u8maxlen(str, max_B);
-  // if it's shorter anyway, this is trivial:
-  if(len <= maxu8) {
-    return len;
-  }
-  // we'd like to find a cut-off point that looks like a sentence boundary
-  // but not if that means cutting off too far back, so start
-  // searching near the end:
-  let minu8 = Math.floor(0.8 * maxu8);
-  let sub = str.substring(minu8, maxu8);
-  let found = lastSentenceEnd(sub);
-  console.log(minu8, maxu8, found+minu8+1);
-  return minu8 + found + 1;     // +1 because we want length, not index
 };
 
 
