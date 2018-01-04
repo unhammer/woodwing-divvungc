@@ -457,7 +457,8 @@ DivvunEditor.prototype.replaceErr = function(e) {
   // source=user since user clicked "replace":
   this.quill.updateContents(delta, "user");
   this.atMostOneSpace(e.data.beg);
-  this.checkOnIdle();
+  // TODO: Do we want checkOnIdle at all when batching?
+  // this.checkOnIdle();
   this.quill.focus();
 };
 

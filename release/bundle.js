@@ -432,7 +432,7 @@ DivvunEditor.prototype.replaceErr = function (e) {
 
   this.quill.updateContents(delta, "user");
   this.atMostOneSpace(e.data.beg);
-  this.checkOnIdle();
+
   this.quill.focus();
 };
 
@@ -633,7 +633,7 @@ DivvunEditor.prototype.checkSubText = function (userpass, text, off, mode) {
       this.checkSubText(userpass, text, next_off, mode);
       this.applyErrs(t, res, o);
     };
-    this.checkXHR.push(this.servercheck(userpass, subtext, off, this.cont.bind(this), mode));
+    this.checkXHR.push(this.servercheck(userpass, subtext, off, cont.bind(this), mode));
   } else {
     this.checkXHR.push(this.servercheck(userpass, subtext, off, this.applyErrs.bind(this), mode));
   }
