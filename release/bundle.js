@@ -432,7 +432,7 @@ DivvunEditor.prototype.replaceErr = function (e) {
 
   this.quill.updateContents(delta, "user");
   this.atMostOneSpace(e.data.beg);
-  this.checkOnIdle(2000);
+  this.checkOnIdle();
   this.quill.focus();
 };
 
@@ -641,7 +641,7 @@ DivvunEditor.prototype.checkSubText = function (userpass, text, off, mode) {
 
 DivvunEditor.prototype.idleTimer = null;
 DivvunEditor.prototype.checkOnIdle = function () {
-  var delay = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 3000;
+  var delay = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 7000;
 
   window.clearTimeout(this.idleTimer);
   this.idleTimer = window.setTimeout(this.check.bind(this), delay);
