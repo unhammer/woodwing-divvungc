@@ -839,6 +839,14 @@ var safeGetItem = function/*::<T>*/(key/*:string*/, fallback/*:T*/)/*:T*/ {
 
 
 
+let overrideWwSpellcheck = function() {
+  // Override browser-spellcheck setting on the main editor. We would
+  // like to do this at once from init, but it seems woodwing turns on
+  // spellcheck after our init runs, thus doing it from mkQuill and
+  // timer
+  $(".writr").attr("spellcheck", "false");
+};
+
 /* Should check if it's been run so we don't get a bunch of editors */
 var mkQuill = function() {
   $('#divvun-editor').remove();
@@ -851,14 +859,6 @@ var mkQuill = function() {
   let editor = new DivvunEditor(editorWrapper.get()[0], mode, wwTexts);
   overrideWwSpellcheck();
   return editor;
-};
-
-let overrideWwSpellcheck = function() {
-  // Override browser-spellcheck setting on the main editor. We would
-  // like to do this at once from init, but it seems woodwing turns on
-  // spellcheck after our init runs, thus doing it from mkQuill and
-  // timer
-  $(".writr").attr("spellcheck", "false");
 };
 
 let PLUGINDIR = "../../config/plugins/divvungc/";

@@ -749,6 +749,10 @@ var safeGetItem = function safeGetItem(key, fallback) {
   }
 };
 
+var overrideWwSpellcheck = function overrideWwSpellcheck() {
+  $(".writr").attr("spellcheck", "false");
+};
+
 var mkQuill = function mkQuill() {
   $('#divvun-editor').remove();
   var editorWrapper = $('<div id="divvun-editor">');
@@ -759,10 +763,6 @@ var mkQuill = function mkQuill() {
   var editor = new DivvunEditor(editorWrapper.get()[0], mode, wwTexts);
   overrideWwSpellcheck();
   return editor;
-};
-
-var overrideWwSpellcheck = function overrideWwSpellcheck() {
-  $(".writr").attr("spellcheck", "false");
 };
 
 var PLUGINDIR = "../../config/plugins/divvungc/";
