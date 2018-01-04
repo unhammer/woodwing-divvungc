@@ -288,13 +288,13 @@ var textCutOff = function textCutOff(str, max_B) {
   return minu8 + found + 1;
 };
 
-var DivvunEditor = function DivvunEditor(editorWrapper, mode) {
+var DivvunEditor = function DivvunEditor(editorWrapper, mode, wwTexts) {
   var self = this;
   this.editorWrapper = editorWrapper;
   var repmenu = $('<div id="divvun-repmenu" style="display:none" role="listbox"><div style="left: 0px;" id="divvun-repmenu_co" role="presentation"><table id="divvun-repmenu_tbl" role="presentation" cellspacing="0" border="0" cellpadding="0"></table></div></div>');
   var editorDiv = $('<div spellcheck="false">');
   $(editorWrapper).append(editorDiv).append(repmenu);
-  var toolbarOptions = [['check', 'exit']];
+  var toolbarOptions = [['check', 'exitandapply', 'cancel']];
   this.quill = new Quill(editorDiv.get()[0], {
     modules: {
       toolbar: {
@@ -303,8 +303,11 @@ var DivvunEditor = function DivvunEditor(editorWrapper, mode) {
           check: function check(_val) {
             self.check();
           },
-          exit: function exit(_val) {
-            self.exit();
+          exitandapply: function exitandapply(_val) {
+            self.exitAndApply();
+          },
+          cancel: function cancel(_val) {
+            self.cancel();
           }
         }
       }
@@ -355,10 +358,40 @@ var DivvunEditor = function DivvunEditor(editorWrapper, mode) {
   if (false) {
     this.updateIgnored();
   }
+  this.wwTexts = wwTexts;
+  this.quill.setContents({
+    ops: this.wwTexts.map(function (t) {
+      return { insert: t + self.wwSep };
+    })
+  });
+  this.check();
 };
 
-DivvunEditor.prototype.exit = function () {
-  console.log("put fixed text back!");
+DivvunEditor.prototype.wwSep = "❡\n";
+
+DivvunEditor.prototype.cancel = function () {
+  this.editorWrapper.remove();
+};
+
+DivvunEditor.prototype.exitAndApply = function () {
+  var texts = this.getFText().split(this.wwSep);
+  if (texts.length != this.wwTexts.length - 1) {
+    console.warn("Unexpected length difference in WoodWing getTexts() and checked Divvun texts!");
+    console.warn(texts);
+    console.warn(this.wwTexts);
+  }
+  if (texts[texts.lenght - 1] !== "") {
+    console.warn("Unexpected non-empty last element of checked Divvun texts: ", texts[texts.length - 1]);
+  }
+  for (var i = 0; i < texts.length - 1; i++) {
+    if (this.wwTexts[i] === texts[i]) {
+      continue;
+    }
+    console.log("Replacing text " + i + ", original-length=" + this.wwTexts[i].length + ", new-length=" + texts[i].length);
+    if (!EditorTextSdk.replaceText(i, 0, this.wwTexts[i].length, texts[i])) {
+      alert('Could not replaceText due to error ' + EditorTextSdk.getErrorMessage());
+    }
+  }
   this.editorWrapper.remove();
 };
 
@@ -611,7 +644,7 @@ DivvunEditor.prototype.checkOnIdle = function () {
   var delay = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 3000;
 
   window.clearTimeout(this.idleTimer);
-  this.idleTimer = window.setTimeout(this.check, delay);
+  this.idleTimer = window.setTimeout(this.check.bind(this), delay);
 };
 
 DivvunEditor.prototype.onTextChange = function (delta, oldDelta, source) {
@@ -722,15 +755,10 @@ var mkQuill = function mkQuill() {
   $(window.document.body).append(editorWrapper);
 
   var mode = "sme|sme_spell";
-  var editor = new DivvunEditor(editorWrapper.get()[0], mode);
-  var texts = EditorTextSdk.getTexts();
-  var delta = {
-    ops: texts.map(function (t) {
-      return { insert: t + "❡\n" };
-    })
-  };
-  editor.quill.setContents(delta);
-  editor.check();
+  var wwTexts = EditorTextSdk.getTexts();
+  var editor = new DivvunEditor(editorWrapper.get()[0], mode, wwTexts);
+
+  $(".writr").attr("spellcheck", "false");
   return editor;
 };
 
@@ -745,7 +773,7 @@ var initCss = function initCss(file) {
 
 var init = function init() {
   initCss(PLUGINDIR + "quill.snow.css");
-  initCss(PLUGINDIR + "style.css?1");
+  initCss(PLUGINDIR + "style.css?2");
   initL10n("sme", PLUGINDIR);
   var subMenuId = EditorUiSdk.createAction({
     label: 'Divvun',

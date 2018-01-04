@@ -1,40 +1,52 @@
-.ql-check {
-    margin-right: 5em;
+.ql-check, .ql-cancel, .ql-exitandapply {
+    margin-left: 4em;
+    margin-right: 4em;
 }
 .ql-check::after {
     content: "✓";
+    border-bottom: 2px dotted blue;
     display: inline-block;
     width: 100%;
-    border-bottom: 2px dotted blue;
     font-size: larger;
     margin-top: -1em;
 }
-.ql-exit::after {
-    content: "skjul";
+.ql-cancel::after {
+    content: "avbryt";
     display: inline-block;
     width: 100%;
     font-size: larger;
     margin-top: -1em;
-    margin-right: 5em;
+}
+.ql-exitandapply::after {
+    content: "bruk endringar";
+    display: inline-block;
+    width: 100%;
+    font-size: larger;
+    margin-top: -1em;
 }
 
 button.divvun-loading-check::after {
-    content: "…";
+    content: "sjekkar …";
     -webkit-text-decoration-color: none;
     -webkit-text-decoration-line: none;
     -webkit-text-decoration-style: none;
     text-decoration-color: none;
     text-decoration-line: none;
     text-decoration-style: none;
+    animation: dot 1.0s infinite;
+    -webkit-animation: dot 1.0s infinite;
 }
-/* TODO: the spinning thing without bootstrap */
-/* button.divvun-loading-check::after { */
-/*     display: none; */
-/* } */
-/* .ql-snow button.divvun-loading-check, */
-/* button.divvun-loading-check { */
-/*     padding: 5px; */
-/* } */
+
+@keyframes dot {
+      0% { opacity: 0.50; }
+     50% { opacity: 0.75; }
+    100% { opacity: 1.00; }
+}
+@-webkit-keyframes dot {
+      0% { opacity: 0.50; }
+     50% { opacity: 0.75; }
+    100% { opacity: 1.00; }
+}
 
 
 .divvun-error {
@@ -149,14 +161,13 @@ button.divvun-loading-check::after {
 
 #divvun-editor {
     min-height: 150px;
-    max-height: 500px;
     overflow-y: hidden;
     top: 46px;
     left: 0;
     bottom: 0;
     right: 0;
     position: absolute;
-    background-color: white;
+    background-color: #e9efe9f3;
     z-index: 20; /* show it over cke_cke-writr; alternatively we could scroll it into view and then scroll back? */
 }
 .ql-editor {

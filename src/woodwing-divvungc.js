@@ -306,7 +306,7 @@ var textCutOff = function(str/*:string*/, max_B/*:number*/)/*:number*/ {
 
 
 
-var DivvunEditor = function(editorWrapper/*:HTMLElement*/, mode/*:string*/)/*:void*/ {
+var DivvunEditor = function(editorWrapper/*:HTMLElement*/, mode/*:string*/, wwTexts/*:Array<string>*/)/*:void*/ {
   let self = this;
   this.editorWrapper = editorWrapper;
   let repmenu = $('<div id="divvun-repmenu" style="display:none" role="listbox"><div style="left: 0px;" id="divvun-repmenu_co" role="presentation"><table id="divvun-repmenu_tbl" role="presentation" cellspacing="0" border="0" cellpadding="0"></table></div></div>');
@@ -315,7 +315,7 @@ var DivvunEditor = function(editorWrapper/*:HTMLElement*/, mode/*:string*/)/*:vo
     .append(editorDiv)
     .append(repmenu);
   let toolbarOptions = [
-    ['check', 'exit'],
+    ['check', 'exitandapply', 'cancel'],
   ];
   this.quill = new Quill(editorDiv.get()[0], {
     modules: {
@@ -323,7 +323,8 @@ var DivvunEditor = function(editorWrapper/*:HTMLElement*/, mode/*:string*/)/*:vo
         container: toolbarOptions,
         handlers: {
           check: function(_val) { self.check(); },
-          exit: function(_val) { self.exit(); }
+          exitandapply: function(_val) { self.exitAndApply(); },
+          cancel: function(_val) { self.cancel(); }
         }
       }
     },
@@ -382,11 +383,41 @@ var DivvunEditor = function(editorWrapper/*:HTMLElement*/, mode/*:string*/)/*:vo
   if(false) {                   // ignores TODO
     this.updateIgnored();
   }
-  // this.check(); // let caller fill us with text first!
+  this.wwTexts = wwTexts;
+  this.quill.setContents({
+    ops: this.wwTexts.map(function(t){ return { insert: t + self.wwSep }; })
+  });
+  this.check();
 };
 
-DivvunEditor.prototype.exit = function()/*: void*/ {
-  console.log("put fixed text back!");
+DivvunEditor.prototype.wwSep = "❡\n";
+
+DivvunEditor.prototype.cancel = function()/*: void*/ {
+  this.editorWrapper.remove();
+};
+
+DivvunEditor.prototype.exitAndApply = function()/*: void*/ {
+  let texts = this.getFText().split(this.wwSep);
+  if (texts.length != this.wwTexts.length - 1) {
+    console.warn("Unexpected length difference in WoodWing getTexts() and checked Divvun texts!");
+    console.warn(texts);
+    console.warn(this.wwTexts);
+  }
+  if(texts[texts.lenght - 1] !== "") {
+    console.warn("Unexpected non-empty last element of checked Divvun texts: ", texts[texts.length - 1]);
+  }
+  for (let i = 0; i < texts.length - 1; i++) {
+    if(this.wwTexts[i] === texts[i]) {
+      continue;
+    }
+    console.log("Replacing text " + i + ", original-length=" + this.wwTexts[i].length + ", new-length=" + texts[i].length);
+    if (!EditorTextSdk.replaceText(i,
+                                   0,
+                                   this.wwTexts[i].length,
+                                   texts[i])) {
+      alert('Could not replaceText due to error ' + EditorTextSdk.getErrorMessage());
+    }
+  }
   this.editorWrapper.remove();
 };
 
@@ -678,7 +709,7 @@ DivvunEditor.prototype.checkSubText = function(userpass/*:userpass*/, text/*:str
 DivvunEditor.prototype.idleTimer = null;
 DivvunEditor.prototype.checkOnIdle = function(delay=3000) {
   window.clearTimeout(this.idleTimer);
-  this.idleTimer = window.setTimeout(this.check, delay);
+  this.idleTimer = window.setTimeout(this.check.bind(this), delay);
 };
 
 DivvunEditor.prototype.onTextChange = function(delta, oldDelta, source) {
@@ -816,15 +847,13 @@ var mkQuill = function() {
   // div ^ has to exist in document before we do ↓
   // var mode = "sme|sme_gram";   // TODO: mode settable?
   var mode = "sme|sme_spell";
-  let editor = new DivvunEditor(editorWrapper.get()[0], mode);
-  let texts = EditorTextSdk.getTexts();
-  let delta = {
-    ops: texts.map(function(t){ return { insert: t + "❡\n" }; })
-  };
-  editor.quill.setContents(delta);
-  editor.check();
+  let wwTexts = EditorTextSdk.getTexts();
+  let editor = new DivvunEditor(editorWrapper.get()[0], mode, wwTexts);
+  // override browser-spellcheck setting on the main editor (would like to do this in init, but it seems woodwing turns on spellcheck after our init runs); this is probably better than nothing though:
+  $(".writr").attr("spellcheck", "false");
   return editor;
 };
+
 
 let PLUGINDIR = "../../config/plugins/divvungc/";
 
@@ -839,7 +868,7 @@ var initCss = function(file) {
 /* Should only run once */
 var init = function() {
   initCss(PLUGINDIR + "quill.snow.css");
-  initCss(PLUGINDIR + "style.css?1");
+  initCss(PLUGINDIR + "style.css?2");
   initL10n("sme", PLUGINDIR);              // TODO: hardcodedlang
   var subMenuId = EditorUiSdk.createAction({
     label: 'Divvun',
