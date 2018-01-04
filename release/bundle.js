@@ -757,9 +757,12 @@ var mkQuill = function mkQuill() {
   var mode = "sme|sme_spell";
   var wwTexts = EditorTextSdk.getTexts();
   var editor = new DivvunEditor(editorWrapper.get()[0], mode, wwTexts);
-
-  $(".writr").attr("spellcheck", "false");
+  overrideWwSpellcheck();
   return editor;
+};
+
+var overrideWwSpellcheck = function overrideWwSpellcheck() {
+  $(".writr").attr("spellcheck", "false");
 };
 
 var PLUGINDIR = "../../config/plugins/divvungc/";
@@ -780,6 +783,7 @@ var init = function init() {
     icon: PLUGINDIR + "divvun.ico",
     click: mkQuill
   });
+  window.setTimeout(overrideWwSpellcheck, 3000);
 };
 
 init();

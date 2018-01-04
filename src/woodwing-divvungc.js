@@ -849,11 +849,17 @@ var mkQuill = function() {
   var mode = "sme|sme_spell";
   let wwTexts = EditorTextSdk.getTexts();
   let editor = new DivvunEditor(editorWrapper.get()[0], mode, wwTexts);
-  // override browser-spellcheck setting on the main editor (would like to do this in init, but it seems woodwing turns on spellcheck after our init runs); this is probably better than nothing though:
-  $(".writr").attr("spellcheck", "false");
+  overrideWwSpellcheck();
   return editor;
 };
 
+let overrideWwSpellcheck = function() {
+  // Override browser-spellcheck setting on the main editor. We would
+  // like to do this at once from init, but it seems woodwing turns on
+  // spellcheck after our init runs, thus doing it from mkQuill and
+  // timer
+  $(".writr").attr("spellcheck", "false");
+};
 
 let PLUGINDIR = "../../config/plugins/divvungc/";
 
@@ -875,6 +881,7 @@ var init = function() {
     icon: PLUGINDIR + "divvun.ico",
     click: mkQuill
   });
+  window.setTimeout(overrideWwSpellcheck, 3000);
 };
 
 init();
