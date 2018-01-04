@@ -1,12 +1,20 @@
 #+TITLE: Divvun spelling and grammar checker plugin for WoodWing ContentStation 10
 
-Currently this just lets you check the text and show spelling
-suggestions.
+This is a plugin for WoodWing ContentStation 10 that provides spelling
+and grammar checking with Divvun's proofing tools (see
+http://divvun.no/ and https://github.com/divvun/divvun-gramcheck).
 
-Applying the suggestions back to the original text is on the TODO.
+Currently, we just do "batch" spelling. That is, after writing a text,
+you can open the plugin and let it check the text and show spelling
+suggestions in a separate window, you may then pick suggestions and
+apply them back to the original document.
 
 #+ATTR_HTML: :alt demo
 [[file:demo.gif][file:demo.gif]]
+
+The WoodWing API doesn't yet provide a way to underline and put events
+on strings in their editor; when they do, we might be able to do
+spelling on-the-fly.
 
 * Installing
 
