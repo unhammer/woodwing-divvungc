@@ -320,16 +320,21 @@ var DivvunEditor = function DivvunEditor(editorWrapper, mode, wwTexts) {
   this.DEFAULT_VARIANT = "gram";
 
   var sameserver = false;
-  if (sameserver) {
-    this.hostname = window.location.hostname === "" ? "localhost" : window.location.hostname;
-    this.port = this.hostname === "localhost" ? "2737" : window.location.port;
-    this.protocol = this.hostname === "localhost" ? "http:" : window.location.protocol;
-    this.subdir = this.hostname === "localhost" ? "" : "/apy";
-  } else {
-    this.hostname = "gtweb.uit.no";
+  if (window.location.hostname === "") {
+    this.hostname = "localhost";
     this.port = "2737";
     this.protocol = "http:";
     this.subdir = "";
+  } else if (sameserver) {
+    this.hostname = window.location.hostname;
+    this.port = window.location.port;
+    this.protocol = window.location.protocol;
+    this.subdir = "/apy";
+  } else {
+    this.hostname = "gtweb.uit.no";
+    this.port = window.location.protocol === "https:" ? 443 : 80;
+    this.protocol = window.location.protocol;
+    this.subdir = "/apy";
   }
 
   this.modesUrl = this.protocol + "//" + this.hostname + ":" + this.port.toString() + this.subdir + "/listPairs";
