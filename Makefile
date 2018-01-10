@@ -39,7 +39,7 @@ src/l20n.js: node_modules/l20n/dist/web/l20n.js
 node_modules/l20n/dist/bundle/web/l20n.js: node_modules
 
 deploy: all
-	rsync -avh release/ woodwingserver:/Applications/MAMP/htdocs/Enterprise/config/plugins/divvungc/
+	rsync -avh release/ woodwingtest:/Applications/MAMP/htdocs/Enterprise/config/plugins/divvungc/
 
 watch:
 	git ls-files |grep -v ^lib | entr -rc make

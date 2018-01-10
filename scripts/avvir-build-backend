@@ -1,0 +1,94 @@
+#!/bin/bash
+
+# Commands to build the backend from source on a macos server
+
+# Could probably install some of this using
+# http://apertium.projectjj.com/osx/install-nightly.sh
+# but at least divvun-gramcheck needs to be from source
+
+# This doesn't build langdata, we just scp that to the server.
+
+# Still TODO: Keep servlet running with whatever macos uses instead of
+# systemd, fix paths in plugin
+
+set -e -u
+
+mkdir -p ~/divvun
+cd ~/divvun
+export PREFIX="$HOME/divvun/PREFIX/"
+
+mkdir -p "${PREFIX}"/share/giella/sme # From own machine, scp all the langdata to server:divvun/PREFIX/share/giella/sme/
+
+mkdir -p "${PREFIX}"/share/apertium/modes
+cat >"${PREFIX}"/share/apertium/modes/sme-sme_spell.mode <<EOF
+
+${PREFIX}/bin/hfst-tokenise -g -S '${PREFIX}/share/giella/sme/tokeniser-gramcheck-gt-desc.pmhfst' | ${PREFIX}/bin/vislcg3 --quiet -g '${PREFIX}/share/giella/sme/mwe-dis.cg3' | ${PREFIX}/bin/cg-mwesplit | ${PREFIX}/bin/divvun-cgspell -m '${PREFIX}/share/giella/sme/errmodel.default.hfst' -l  '${PREFIX}/share/giella/sme/acceptor.default.hfst' -n 25 | ${PREFIX}/bin/vislcg3 --quiet -g '${PREFIX}/share/giella/sme/disambiguator.cg3' | ${PREFIX}/bin/vislcg3 --quiet -g '${PREFIX}/share/giella/sme/spelltag.cg3' | ${PREFIX}/bin/divvun-suggest --json '${PREFIX}/share/giella/sme/generator-gt-norm.hfstol' '${PREFIX}/share/giella/sme/errors.xml'
+
+EOF
+
+# It seems like g++/clang, git and svn are already there, but we need these:
+sudo port install cmake         # visclg3
+sudo port install boost         # visclg3
+sudo port install icu           # visclg3
+sudo port install bison         # hfst (https://github.com/hfst/hfst/issues/178#issuecomment-192242208)
+sudo port install pugixml       # divvun-gramcheck
+sudo port install libarchive    # divvun-gramcheck
+sudo port install py35-tornado  # apy
+sudo port install apertium      # apy (for apertium-deshtml/rehtml)
+
+svn co http://visl.sdu.dk/svn/visl/tools/vislcg3/trunk/ vislcg3-trunk
+(
+    cd vislcg3-trunk
+    ./cmake.sh -DCMAKE_INSTALL_PREFIX="${PREFIX}"
+    make -j3
+    make install
+)
+
+git clone https://github.com/hfst/hfst
+(
+    cd hfst
+    ./autogen.sh
+    ./configure --enable-xfst --enable-proc --enable-lexc --enable-all-tools --enable-silent-rules --prefix="${PREFIX}"
+    make -j3
+    make install
+)
+
+git clone https://github.com/hfst/hfst-ospell
+(
+    cd hfst-ospell
+    ./autogen.sh
+    ./configure --enable-zhfst --prefix="${PREFIX}"
+    make -j3
+    make install
+)
+
+# Adding /opt/local to LDFLAGS etc. means we get old versions of hfst
+# etc.,; we just want pugixml and libarchive:
+cp /opt/local/include/pugixml.hpp "${PREFIX}/include"
+cp /opt/local/include/pugiconfig.hpp "${PREFIX}/include"
+cp /opt/local/lib/libpugixml.* "${PREFIX}/lib"
+
+cp /opt/local/include/archive.h "${PREFIX}/include"
+cp /opt/local/include/archive_entry.h "${PREFIX}/include"
+cp /opt/local/lib/libarchive.* "${PREFIX}/lib"
+
+git clone https://github.com/divvun/divvun-gramcheck/
+(
+    set -u -e
+    cd divvun-gramcheck
+    export CXXFLAGS="-I${PREFIX}/include ${CXXFLAGS:-}"
+    export CPPFLAGS="-I${PREFIX}/include ${CPPFLAGS:-}"
+    export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:/opt/local/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+    export LD_LIBRARY_PATH="${PREFIX}/lib:/opt/local/lib:${LD_LIBRARY_PATH:-}"
+    export PATH="${PREFIX}/bin:$PATH"
+    export LDFLAGS="${LDFLAGS:-} -Wl,-rpath,${PREFIX}/lib -L${PREFIX}/lib"
+    ./autogen.sh
+    ./configure --enable-cgspell --enable-xml --prefix="${PREFIX}"
+    make -j3
+    make install
+)
+
+# We just run this from the source dir:
+git clone -b giellatekno https://github.com/goavki/apertium-apy
+LC_ALL=en_US.UTF-8 printf "\xc3\xa1vvir:test\n" >apertium-apy/users
+LC_ALL=en_US.UTF-8 apertium-apy/servlet.py "${PREFIX}/share/apertium/modes" --max-idle-secs 3600 --restart-pipe-after 100 --userdb apertium-apy/users
