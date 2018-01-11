@@ -88,7 +88,49 @@ git clone https://github.com/divvun/divvun-gramcheck/
     make install
 )
 
+
 # We just run this from the source dir:
 git clone -b giellatekno https://github.com/goavki/apertium-apy
 LC_ALL=en_US.UTF-8 printf "\xc3\xa1vvir:test\n" >apertium-apy/users
-LC_ALL=en_US.UTF-8 apertium-apy/servlet.py "${PREFIX}/share/apertium/modes" --max-idle-secs 3600 --restart-pipe-after 100 --userdb apertium-apy/users
+
+cat >no.divvun.gramcheck.plist <<EOF
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+"http://www.apple.com/DTDs/PropertyList-1.0.dtd" >
+<plist version='1.0'>
+<dict>
+<key>Label</key><string>no.divvun.gramcheck</string>
+<key>ProgramArguments</key>
+<array>
+	<string>/opt/local/bin/python3</string>
+	<string>${PWD}/apertium-apy/servlet.py</string>
+	<string>${PREFIX}/share/apertium/modes</string>
+	<string>--max-idle-secs</string>
+	<string>3600</string>
+	<string>--restart-pipe-after</string>
+	<string>200</string>
+	<string>--userdb</string>
+	<string>${PWD}/apertium-apy/users</string>
+</array>
+<key>UserName</key><string>$USER</string>
+<key>Disabled</key><false/>
+<key>KeepAlive</key><true/>
+<key>RunAtLoad</key><true/>
+<key>EnvironmentVariables</key>
+    <dict>
+        <key>LC_ALL</key> <string>en_US.UTF-8</string>
+        <key>PATH</key>   <string>${PREFIX}/bin:/opt/local/bin:/opt/local/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+</dict>
+</plist>
+EOF
+
+sudo cp no.divvun.gramcheck.plist /Library/LaunchDaemons/
+sudo launchctl load /Library/LaunchDaemons/no.divvun.gramcheck.plist
+
+### To catch output, open a second terminal and do
+# $ sudo launchctl debug system/no.divvun.gramcheck --stderr --stdout
+### then restart the service with
+# $ sudo launchctl stop no.divvun.gramcheck
+# $ sudo launchctl start no.divvun.gramcheck
+
