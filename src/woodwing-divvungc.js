@@ -337,6 +337,7 @@ var DivvunEditor = function(editorWrapper/*:HTMLElement*/, mode/*:string*/, wwTe
   this.DEFAULT_VARIANT= "gram";
 
   let sameserver = false;
+  let uitserver = false;
   if(window.location.hostname === "") {
     this.hostname = "localhost";
     this.port = "2737";
@@ -349,11 +350,17 @@ var DivvunEditor = function(editorWrapper/*:HTMLElement*/, mode/*:string*/, wwTe
     this.protocol = window.location.protocol;
     this.subdir = "/apy";
   }
-  else {
+  else if(uitserver) {
     this.hostname = "gtweb.uit.no";
     this.port = window.location.protocol === "https:" ? 443 : 80;
     this.protocol = window.location.protocol;
     this.subdir = "/apy";
+  }
+  else {
+    this.hostname = "192.168.22.60";
+    this.port = "2737";
+    this.protocol = window.location.protocol;
+    this.subdir = "";
   }
 
   // TODO: apy should have an endpoint for grammar checkers, and expect its modes files in a separate dir!
@@ -684,7 +691,7 @@ DivvunEditor.prototype.check = function() {
   this.clearErrs();
   let text = this.getFText();
 
-  // TODO userpass settable?
+  // TODO: can we dispense with this username stuff soon?
   let userpass = { u: "ávvir", p: "test" };
 
   while(this.checkXHR.length > 0) {
