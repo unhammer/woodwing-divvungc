@@ -41,5 +41,8 @@ node_modules/l20n/dist/bundle/web/l20n.js: node_modules
 deploy: all
 	rsync -avh release/ woodwingtest:/Applications/MAMP/htdocs/Enterprise/config/plugins/divvungc/
 
+deployprod: all
+	rsync -avh release/ woodwingprod:/opt/local/apache2/htdocs/Enterprise/config/plugins/divvungc/
+
 watch:
 	git ls-files |grep -v ^lib | entr -rc make
