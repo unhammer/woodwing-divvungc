@@ -262,7 +262,7 @@ var assert = function assert(condition, message) {
   }
 };
 
-var APYMAXBYTES = 4096;
+var APYMAXBYTES = 512;
 
 var lastSentenceEnd = function lastSentenceEnd(str) {
   var sep = /[.:!]\s/g;
@@ -281,7 +281,7 @@ var textCutOff = function textCutOff(str, max_B) {
     return len;
   }
 
-  var minu8 = Math.floor(0.8 * maxu8);
+  var minu8 = Math.floor(0.7 * maxu8);
   var sub = str.substring(minu8, maxu8);
   var found = lastSentenceEnd(sub);
   console.log(minu8, maxu8, found + minu8 + 1);
@@ -320,6 +320,7 @@ var DivvunEditor = function DivvunEditor(editorWrapper, mode, wwTexts) {
   this.DEFAULT_VARIANT = "gram";
 
   var sameserver = false;
+  var uitserver = false;
   if (window.location.hostname === "") {
     this.hostname = "localhost";
     this.port = "2737";
@@ -330,11 +331,16 @@ var DivvunEditor = function DivvunEditor(editorWrapper, mode, wwTexts) {
     this.port = window.location.port;
     this.protocol = window.location.protocol;
     this.subdir = "/apy";
-  } else {
+  } else if (uitserver) {
     this.hostname = "gtweb.uit.no";
     this.port = window.location.protocol === "https:" ? 443 : 80;
     this.protocol = window.location.protocol;
     this.subdir = "/apy";
+  } else {
+    this.hostname = "192.168.22.60";
+    this.port = "2737";
+    this.protocol = window.location.protocol;
+    this.subdir = "";
   }
 
   this.modesUrl = this.protocol + "//" + this.hostname + ":" + this.port.toString() + this.subdir + "/listPairs";

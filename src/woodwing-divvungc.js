@@ -269,7 +269,7 @@ var assert = function(condition, message) {
   }
 };
 
-let APYMAXBYTES = 4096; // TODO: APY endpoint to return select.PIPE_BUF ?
+let APYMAXBYTES = 512; // TODO: APY endpoint to return select.PIPE_BUF ?
 
 var lastSentenceEnd = function(str) {
   let sep = /[.:!]\s/g;
@@ -296,7 +296,7 @@ var textCutOff = function(str/*:string*/, max_B/*:number*/)/*:number*/ {
   // we'd like to find a cut-off point that looks like a sentence boundary
   // but not if that means cutting off too far back, so start
   // searching near the end:
-  let minu8 = Math.floor(0.8 * maxu8);
+  let minu8 = Math.floor(0.7 * maxu8);
   let sub = str.substring(minu8, maxu8);
   let found = lastSentenceEnd(sub);
   console.log(minu8, maxu8, found+minu8+1);
