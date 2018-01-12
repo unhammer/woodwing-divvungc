@@ -12,17 +12,27 @@ apply them back to the original document.
 #+ATTR_HTML: :alt demo
 [[file:demo.gif][file:demo.gif]]
 
-The WoodWing API doesn't yet provide a way to underline and put events
-on strings in their editor; when they do, we might be able to do
-spelling on-the-fly.
+* Limitations
+There is no on-the-fly spelling, only batch. The WoodWing API doesn't
+yet provide a way to underline and put events on strings in their
+editor. When such an API arrives, we should be able to do spelling
+on-the-fly.
+
+There is also no support yet for the digital editor (multichannel),
+only the print editor, since WoodWing doesn't yet provide an API for
+the digital editor. The API is expected to come some time in the first
+quarter of 2018.
 
 * Installing
+** Frontend (this repo)
 
-To use, put the contents of the =release= folder into the folder
+To install the frontend, put the contents of the =release= folder into
+a subdirectory named =divvungc= of the WoodWing =config/plugins=
+folder on the server. If this folder is e.g.
 
 =/Applications/MAMP/htdocs/Enterprise/config/plugins/divvungc/=
 
-on the server; e.g.
+then you can copy it from your machine with
 
 #+BEGIN_SRC sh
 rsync -avh release/ woodwingserver:/Applications/MAMP/htdocs/Enterprise/config/plugins/divvungc/
@@ -49,3 +59,19 @@ making it e.g.
      ]
    }
 #+END_SRC
+
+** Backend
+URL to the backend is currently hardcoded in the JavaScript. If you
+need to change the URL/port/subdir, you can edit [[file:release/bundle.js::this.hostname%20%3D%20"192.168.22.60"%3B][release/bundle.js]] and
+change the lines
+
+#+BEGIN_SRC js
+    this.hostname = "192.168.22.60";
+    this.port = "2737";
+    this.protocol = window.location.protocol;
+    this.subdir = "";
+#+END_SRC
+
+If you wish to run the backend from your own server, see the file
+[[file:scripts/avvir-build-backend][scripts/avvir-build-backend]] for build instructions. This is currently
+a bit complicated, we hope to make it easier in the future.
