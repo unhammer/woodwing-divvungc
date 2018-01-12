@@ -102,15 +102,19 @@ cat >no.divvun.gramcheck.plist <<EOF
 <key>Label</key><string>no.divvun.gramcheck</string>
 <key>ProgramArguments</key>
 <array>
-	<string>/opt/local/bin/python3</string>
-	<string>${PWD}/apertium-apy/servlet.py</string>
-	<string>${PREFIX}/share/apertium/modes</string>
-	<string>--max-idle-secs</string>
-	<string>3600</string>
-	<string>--restart-pipe-after</string>
-	<string>200</string>
-	<string>--userdb</string>
-	<string>${PWD}/apertium-apy/users</string>
+        <string>/opt/local/bin/python3</string>
+        <string>${PWD}/apertium-apy/servlet.py</string>
+        <string>${PREFIX}/share/apertium/modes</string>
+        <string>--max-idle-secs</string>
+        <string>3600</string>
+        <string>--restart-pipe-after</string>
+        <string>200</string>
+        <string>--max-pipes-per-pair</string>
+        <string>2</string>
+        <string>--max-users-per-pipe</string>
+        <string>1</string>
+        <string>--userdb</string>
+        <string>${PWD}/apertium-apy/users</string>
 </array>
 <key>UserName</key><string>$USER</string>
 <key>Disabled</key><false/>
