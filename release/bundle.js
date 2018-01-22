@@ -661,7 +661,6 @@ DivvunEditor.prototype.checkOnIdle = function () {
 DivvunEditor.prototype.onTextChange = function (delta, oldDelta, source) {
   if (source == 'api') {} else if (source == 'user') {
     ErrorBlot.hiderep();
-    this.checkOnIdle();
   }
 };
 

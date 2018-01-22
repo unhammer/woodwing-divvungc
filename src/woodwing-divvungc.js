@@ -729,7 +729,7 @@ DivvunEditor.prototype.onTextChange = function(delta, oldDelta, source) {
   else if (source == 'user') {
     // Note that our own replaceErr events are also source==user
     ErrorBlot.hiderep();
-    this.checkOnIdle();
+    // this.checkOnIdle();
   }
 };
 
