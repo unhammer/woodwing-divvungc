@@ -43,6 +43,8 @@ $('head').append(el);
 
 
 
+let Delta = Quill.import('delta');
+
 // Define our error underlines as a kind of inline formatting in Quill:
 let Inline = Quill.import('blots/inline');
 class ErrorBlot extends Inline {
@@ -393,7 +395,7 @@ var DivvunEditor = function(editorWrapper/*:HTMLElement*/, mode/*:string*/, wwTe
   if(false) {                   // ignores TODO
     this.updateIgnored();
   }
-  this.wwTexts = wwTexts;
+  this.wwTexts = wwTexts;       // "const", don't change this elsewhere
   this.quill.setContents({
     ops: this.wwTexts.map(function(t){ return { insert: t + self.wwSep }; })
   });
@@ -404,31 +406,78 @@ DivvunEditor.prototype.wwSep = "❡\n";
 
 DivvunEditor.prototype.cancel = function()/*: void*/ {
   this.editorWrapper.remove();
+  if(!EditorTextSdk.cancelTransaction()) {
+    alert("Failed to cancel transaction, WoodWing says: " + EditorTextSdk.getErrorMessage());
+  }
+};
+
+var diff2reps = function (orig/*:Delta*/, changed/*:Delta*/)/*:Array<{ beg: number, end: number, rep: string }>*/ {
+  let d = orig.diff(changed);
+  // Find the index of the last change in orig:
+  var iEnd = 0;
+  for(let i = 0; i < d.ops.length; i++) {
+    if(d.ops[i].retain){ iEnd += d.ops[i].retain; }
+    if(d.ops[i].delete){ iEnd += d.ops[i].delete; }
+    if(d.ops[i].insert){ }
+  }
+  // Starting from the end, create a list of replacements, taking our
+  // end-index down with us:
+  var reps = [];
+  for(let i = d.ops.length - 1; i >= 0; i--) {
+    if(d.ops[i].retain){
+      iEnd -= d.ops[i].retain;
+    };
+    if(d.ops[i].delete){
+      reps.push({ beg: iEnd - d.ops[i].delete,
+                  end: iEnd,
+                  rep: "" });
+      iEnd -= d.ops[i].delete;
+    };
+    if(d.ops[i].insert){
+      reps.push({ beg: iEnd,
+                  end: iEnd,
+                  rep: d.ops[i].insert });
+    }
+  }
+  return reps;
 };
 
 DivvunEditor.prototype.exitAndApply = function()/*: void*/ {
   let texts = this.getFText().split(this.wwSep);
-  if (texts.length != this.wwTexts.length - 1) {
+
+  if(texts[texts.length - 1] !== "") {
+    console.warn("Unexpected non-empty last element of checked Divvun texts: ", texts[texts.length - 1]);
+    // TODO: What would this imply?
+  }
+
+  if (texts.length !== this.wwTexts.length + 1) {
     console.warn("Unexpected length difference in WoodWing getTexts() and checked Divvun texts!");
     console.warn(texts);
     console.warn(this.wwTexts);
+    alert("Unexpected length difference in WoodWing and checked Divvun texts, not applying changes.");
+    // Be conservative here, this could be bad.
+    return this.cancel();
   }
-  if(texts[texts.length - 1] !== "") {
-    console.warn("Unexpected non-empty last element of checked Divvun texts: ", texts[texts.length - 1]);
+
+
+  var textsOff = 0;
+  for (let iText = 0; iText < texts.length - 1; iText++) {
+    let endIncSep = texts[iText].length + this.wwSep.length;
+    let orig = new Delta({ ops: [{ insert: this.wwTexts[iText] + this.wwSep }]});
+    let changed = this.quill.getContents(textsOff, endIncSep);
+    diff2reps(orig, changed).map(function(r) {
+      console.log("In component " + iText + ", replace substring from " + r.beg + " to " + r.end + " with '" + r.rep + "'");
+      if (!EditorTextSdk.replaceText(iText, r.beg, r.end, r.rep)) {
+        console.warn('Could not replaceText due to error ' + EditorTextSdk.getErrorMessage());
+      }
+    });
+    textsOff += endIncSep;
   }
-  for (let i = 0; i < texts.length - 1; i++) {
-    if(this.wwTexts[i] === texts[i]) {
-      continue;
-    }
-    console.log("Replacing text " + i + ", original-length=" + this.wwTexts[i].length + ", new-length=" + texts[i].length);
-    if (!EditorTextSdk.replaceText(i,
-                                   0,
-                                   this.wwTexts[i].length,
-                                   texts[i])) {
-      alert('Could not replaceText due to error ' + EditorTextSdk.getErrorMessage());
-    }
-  }
+
   this.editorWrapper.remove();
+  if(!EditorTextSdk.closeTransaction()) {
+    alert("Failed to close transaction, WoodWing says: " + EditorTextSdk.getErrorMessage());
+  }
 };
 
 DivvunEditor.prototype.getModes = function()/*: void*/ {
@@ -861,6 +910,13 @@ let overrideWwSpellcheck = function() {
 /* Should check if it's been run so we don't get a bunch of editors */
 var mkQuill = function() {
   $('#divvun-editor').remove();
+  if(!EditorTextSdk.canEditArticle()) {
+    alert("WoodWing says we can't edit the article.");
+  }
+  if(!EditorTextSdk.startTransaction()) {
+    alert("Failed to start transaction, WoodWing says: " + EditorTextSdk.getErrorMessage());
+    return;
+  }
   let editorWrapper = $('<div id="divvun-editor">');
   $(window.document.body).append(editorWrapper);
   // div ^ has to exist in document before we do ↓
@@ -869,7 +925,6 @@ var mkQuill = function() {
   let wwTexts = EditorTextSdk.getTexts();
   let editor = new DivvunEditor(editorWrapper.get()[0], mode, wwTexts);
   overrideWwSpellcheck();
-  return editor;
 };
 
 let PLUGINDIR = "../../config/plugins/divvungc/";

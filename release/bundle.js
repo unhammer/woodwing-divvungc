@@ -60,6 +60,8 @@ var initL10n = function initL10n(lang, dir) {
   $('head').append(el);
 };
 
+var Delta = Quill.import('delta');
+
 var Inline = Quill.import('blots/inline');
 
 var ErrorBlot = function (_Inline) {
@@ -382,28 +384,86 @@ DivvunEditor.prototype.wwSep = "❡\n";
 
 DivvunEditor.prototype.cancel = function () {
   this.editorWrapper.remove();
+  if (!EditorTextSdk.cancelTransaction()) {
+    alert("Failed to cancel transaction, WoodWing says: " + EditorTextSdk.getErrorMessage());
+  }
+};
+
+var diff2reps = function diff2reps(orig, changed) {
+  var d = orig.diff(changed);
+
+  var iEnd = 0;
+  for (var i = 0; i < d.ops.length; i++) {
+    if (d.ops[i].retain) {
+      iEnd += d.ops[i].retain;
+    }
+    if (d.ops[i].delete) {
+      iEnd += d.ops[i].delete;
+    }
+    if (d.ops[i].insert) {}
+  }
+
+  var reps = [];
+  for (var _i = d.ops.length - 1; _i >= 0; _i--) {
+    if (d.ops[_i].retain) {
+      iEnd -= d.ops[_i].retain;
+    };
+    if (d.ops[_i].delete) {
+      reps.push({ beg: iEnd - d.ops[_i].delete,
+        end: iEnd,
+        rep: "" });
+      iEnd -= d.ops[_i].delete;
+    };
+    if (d.ops[_i].insert) {
+      reps.push({ beg: iEnd,
+        end: iEnd,
+        rep: d.ops[_i].insert });
+    }
+  }
+  return reps;
 };
 
 DivvunEditor.prototype.exitAndApply = function () {
+  var _this2 = this;
+
   var texts = this.getFText().split(this.wwSep);
-  if (texts.length != this.wwTexts.length - 1) {
-    console.warn("Unexpected length difference in WoodWing getTexts() and checked Divvun texts!");
-    console.warn(texts);
-    console.warn(this.wwTexts);
-  }
+
   if (texts[texts.length - 1] !== "") {
     console.warn("Unexpected non-empty last element of checked Divvun texts: ", texts[texts.length - 1]);
   }
-  for (var i = 0; i < texts.length - 1; i++) {
-    if (this.wwTexts[i] === texts[i]) {
-      continue;
-    }
-    console.log("Replacing text " + i + ", original-length=" + this.wwTexts[i].length + ", new-length=" + texts[i].length);
-    if (!EditorTextSdk.replaceText(i, 0, this.wwTexts[i].length, texts[i])) {
-      alert('Could not replaceText due to error ' + EditorTextSdk.getErrorMessage());
-    }
+
+  if (texts.length !== this.wwTexts.length + 1) {
+    console.warn("Unexpected length difference in WoodWing getTexts() and checked Divvun texts!");
+    console.warn(texts);
+    console.warn(this.wwTexts);
+    alert("Unexpected length difference in WoodWing and checked Divvun texts, not applying changes.");
+
+    return this.cancel();
   }
+
+  var textsOff = 0;
+
+  var _loop = function _loop(iText) {
+    var endIncSep = texts[iText].length + _this2.wwSep.length;
+    var orig = new Delta({ ops: [{ insert: _this2.wwTexts[iText] + _this2.wwSep }] });
+    var changed = _this2.quill.getContents(textsOff, endIncSep);
+    diff2reps(orig, changed).map(function (r) {
+      console.log("In component " + iText + ", replace substring from " + r.beg + " to " + r.end + " with '" + r.rep + "'");
+      if (!EditorTextSdk.replaceText(iText, r.beg, r.end, r.rep)) {
+        console.warn('Could not replaceText due to error ' + EditorTextSdk.getErrorMessage());
+      }
+    });
+    textsOff += endIncSep;
+  };
+
+  for (var iText = 0; iText < texts.length - 1; iText++) {
+    _loop(iText);
+  }
+
   this.editorWrapper.remove();
+  if (!EditorTextSdk.closeTransaction()) {
+    alert("Failed to close transaction, WoodWing says: " + EditorTextSdk.getErrorMessage());
+  }
 };
 
 DivvunEditor.prototype.getModes = function () {
@@ -529,7 +589,7 @@ var mergeErrs = function mergeErrs(errs) {
 };
 
 DivvunEditor.prototype.applyErrs = function (text, res, off) {
-  var _this2 = this;
+  var _this3 = this;
 
   var igntyps = safeGetItem("igntyps", new Set());
   var mergedErrs = mergeErrs(res.errs);
@@ -550,7 +610,7 @@ DivvunEditor.prototype.applyErrs = function (text, res, off) {
     if (err.str !== text.substr(err.beg, err.len)) {
       console.warn("Unexpected difference between error string '" + err.str + "' and text at error indices '" + text.substr(err.beg, err.len) + "'");
     }
-    _this2.quill.formatText(err.beg, err.len, "error", err);
+    _this3.quill.formatText(err.beg, err.len, "error", err);
   });
   log(res);
   $("#divvun-serverfault").hide();
@@ -765,6 +825,13 @@ var overrideWwSpellcheck = function overrideWwSpellcheck() {
 
 var mkQuill = function mkQuill() {
   $('#divvun-editor').remove();
+  if (!EditorTextSdk.canEditArticle()) {
+    alert("WoodWing says we can't edit the article.");
+  }
+  if (!EditorTextSdk.startTransaction()) {
+    alert("Failed to start transaction, WoodWing says: " + EditorTextSdk.getErrorMessage());
+    return;
+  }
   var editorWrapper = $('<div id="divvun-editor">');
   $(window.document.body).append(editorWrapper);
 
@@ -772,7 +839,6 @@ var mkQuill = function mkQuill() {
   var wwTexts = EditorTextSdk.getTexts();
   var editor = new DivvunEditor(editorWrapper.get()[0], mode, wwTexts);
   overrideWwSpellcheck();
-  return editor;
 };
 
 var PLUGINDIR = "../../config/plugins/divvungc/";

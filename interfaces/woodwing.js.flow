@@ -1,5 +1,13 @@
 declare class EditorTextSdk {
   static getTexts(): Array<string>;
+  static replaceText(text: number, startOffset: number, endOffset: number, replacement: string): void;
+  static isTextSelected(): bool;
+  static canEditArticle(): bool;
+  static getErrorMessage(): string;
+  static startTransaction(): bool;
+  static closeTransaction(): bool;
+  static cancelTransaction(): bool;
+  static isInTransaction(): bool;
 }
 
 declare module 'EditorTextSdk' {
