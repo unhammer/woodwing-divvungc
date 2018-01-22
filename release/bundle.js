@@ -830,6 +830,10 @@ var mkQuill = function mkQuill() {
   }
   if (!EditorTextSdk.startTransaction()) {
     alert("Failed to start transaction, WoodWing says: " + EditorTextSdk.getErrorMessage());
+
+    if (!EditorTextSdk.cancelTransaction()) {
+      alert("Failed to cancel transaction, WoodWing says: " + EditorTextSdk.getErrorMessage());
+    }
     return;
   }
   var editorWrapper = $('<div id="divvun-editor">');

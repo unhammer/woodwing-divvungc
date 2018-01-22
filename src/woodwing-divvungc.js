@@ -915,6 +915,10 @@ var mkQuill = function() {
   }
   if(!EditorTextSdk.startTransaction()) {
     alert("Failed to start transaction, WoodWing says: " + EditorTextSdk.getErrorMessage());
+    // Did we start one already? This seems to happen with undos.
+    if(!EditorTextSdk.cancelTransaction()) {
+      alert("Failed to cancel transaction, WoodWing says: " + EditorTextSdk.getErrorMessage());
+    }
     return;
   }
   let editorWrapper = $('<div id="divvun-editor">');
