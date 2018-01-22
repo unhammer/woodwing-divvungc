@@ -391,7 +391,7 @@ DivvunEditor.prototype.exitAndApply = function () {
     console.warn(texts);
     console.warn(this.wwTexts);
   }
-  if (texts[texts.lenght - 1] !== "") {
+  if (texts[texts.length - 1] !== "") {
     console.warn("Unexpected non-empty last element of checked Divvun texts: ", texts[texts.length - 1]);
   }
   for (var i = 0; i < texts.length - 1; i++) {
