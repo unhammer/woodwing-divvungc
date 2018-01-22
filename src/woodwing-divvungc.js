@@ -408,6 +408,34 @@ DivvunEditor.prototype.cancel = function()/*: void*/ {
   this.editorWrapper.remove();
 };
 
+var applyWw = function (orig/*:Delta*/, changed/*:Delta*/)/*:Array<{ beg: number, end: number, rep: string }>*/ {
+  let d = orig.diff(changed);
+  var iEnd = 0;
+  for(let i = 0; i < d.ops.length; i++) {
+    if(d.ops[i].retain){ iEnd += d.ops[i].retain; }
+    if(d.ops[i].delete){ iEnd += d.ops[i].delete; }
+    if(d.ops[i].insert){ }
+  }
+  var reps = [];
+  for(let i = d.ops.length - 1; i >= 0; i--) {
+    if(d.ops[i].retain){
+      iEnd -= d.ops[i].retain;
+    };
+    if(d.ops[i].delete){
+      reps.push({ beg: iEnd - d.ops[i].delete,
+                  end: iEnd,
+                  rep: "" });
+      iEnd -= d.ops[i].delete;
+    };
+    if(d.ops[i].insert){
+      reps.push({ beg: iEnd,
+                  end: iEnd,
+                  rep: d.ops[i].insert });
+    }
+  }
+  return reps;
+};
+
 DivvunEditor.prototype.exitAndApply = function()/*: void*/ {
   let texts = this.getFText().split(this.wwSep);
 
@@ -416,32 +444,12 @@ DivvunEditor.prototype.exitAndApply = function()/*: void*/ {
     let endIncSep = texts[iText].length+1;
     let orig = new Delta(this.wwTexts[iText] + self.wwSep);
     let changed = this.quill.getContents(off, endIncSep);
-    let d = orig.diff(changed);
-
-    var iEnd = 0;
-    for(let i = 0; i < d.ops.length; i++) {
-      if(d.ops[i].retain){ iEnd += d.ops[i].retain; };
-      if(d.ops[i].delete){ iEnd -= d.ops[i].delete; };
-      if(d.ops[i].insert){ iEnd += d.ops[i].insert.length; }
-    }
-    var iBeg = iEnd;
-    for(let i = d.ops.length - 1; i >= 0; i--) {
-      if(d.ops[i].retain){
-        iEnd -= d.ops[i].retain;
-      };
-      if(d.ops[i].delete){
-        iBeg = iEnd - d.ops[i].delete;
-        if (!EditorTextSdk.replaceText(iText, iBeg, iEnd, "")) {
-          console.warn('Could not replaceText due to error ' + EditorTextSdk.getErrorMessage());
-        }
-      };
-      if(d.ops[i].insert){
-        if (!EditorTextSdk.replaceText(iText, iEnd, iEnd, d.ops[i].insert)) {
-          console.warn('Could not replaceText due to error ' + EditorTextSdk.getErrorMessage());
-        }
-        iEnd -= d.ops[i].insert.length;
+    applyWw(orig, changed).map(function(r) {
+      console.log("replace ", r.beg, r.end, r.rep);
+      if (!EditorTextSdk.replaceText(iText, r.beg, r.end, r.rep)) {
+        console.warn('Could not replaceText due to error ' + EditorTextSdk.getErrorMessage());
       }
-    }
+    });
     off += endIncSep;
   }
 
