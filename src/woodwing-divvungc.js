@@ -43,6 +43,8 @@ $('head').append(el);
 
 
 
+let Delta = Quill.import('delta');
+
 // Define our error underlines as a kind of inline formatting in Quill:
 let Inline = Quill.import('blots/inline');
 class ErrorBlot extends Inline {
@@ -393,7 +395,7 @@ var DivvunEditor = function(editorWrapper/*:HTMLElement*/, mode/*:string*/, wwTe
   if(false) {                   // ignores TODO
     this.updateIgnored();
   }
-  this.wwTexts = wwTexts;
+  this.wwTexts = wwTexts;       // "const", don't change this elsewhere
   this.quill.setContents({
     ops: this.wwTexts.map(function(t){ return { insert: t + self.wwSep }; })
   });
@@ -408,6 +410,41 @@ DivvunEditor.prototype.cancel = function()/*: void*/ {
 
 DivvunEditor.prototype.exitAndApply = function()/*: void*/ {
   let texts = this.getFText().split(this.wwSep);
+
+  var off = 0;
+  for (let iText = 0; iText < texts.length - 1; iText++) {
+    let endIncSep = texts[iText].length+1;
+    let orig = new Delta(this.wwTexts[iText] + self.wwSep);
+    let changed = this.quill.getContents(off, endIncSep);
+    let d = orig.diff(changed);
+
+    var iEnd = 0;
+    for(let i = 0; i < d.ops.length; i++) {
+      if(d.ops[i].retain){ iEnd += d.ops[i].retain; };
+      if(d.ops[i].delete){ iEnd -= d.ops[i].delete; };
+      if(d.ops[i].insert){ iEnd += d.ops[i].insert.length; }
+    }
+    var iBeg = iEnd;
+    for(let i = d.ops.length - 1; i >= 0; i--) {
+      if(d.ops[i].retain){
+        iEnd -= d.ops[i].retain;
+      };
+      if(d.ops[i].delete){
+        iBeg = iEnd - d.ops[i].delete;
+        if (!EditorTextSdk.replaceText(iText, iBeg, iEnd, "")) {
+          console.warn('Could not replaceText due to error ' + EditorTextSdk.getErrorMessage());
+        }
+      };
+      if(d.ops[i].insert){
+        if (!EditorTextSdk.replaceText(iText, iEnd, iEnd, d.ops[i].insert)) {
+          console.warn('Could not replaceText due to error ' + EditorTextSdk.getErrorMessage());
+        }
+        iEnd -= d.ops[i].insert.length;
+      }
+    }
+    off += endIncSep;
+  }
+
   if (texts.length != this.wwTexts.length - 1) {
     console.warn("Unexpected length difference in WoodWing getTexts() and checked Divvun texts!");
     console.warn(texts);
@@ -425,7 +462,7 @@ DivvunEditor.prototype.exitAndApply = function()/*: void*/ {
                                    0,
                                    this.wwTexts[i].length,
                                    texts[i])) {
-      alert('Could not replaceText due to error ' + EditorTextSdk.getErrorMessage());
+      console.warn('Could not replaceText due to error ' + EditorTextSdk.getErrorMessage());
     }
   }
   this.editorWrapper.remove();

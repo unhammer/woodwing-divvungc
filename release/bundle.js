@@ -60,6 +60,8 @@ var initL10n = function initL10n(lang, dir) {
   $('head').append(el);
 };
 
+var Delta = Quill.import('delta');
+
 var Inline = Quill.import('blots/inline');
 
 var ErrorBlot = function (_Inline) {
@@ -386,6 +388,47 @@ DivvunEditor.prototype.cancel = function () {
 
 DivvunEditor.prototype.exitAndApply = function () {
   var texts = this.getFText().split(this.wwSep);
+
+  var off = 0;
+  for (var iText = 0; iText < texts.length - 1; iText++) {
+    var endIncSep = texts[iText].length + 1;
+    var orig = new Delta(this.wwTexts[iText] + self.wwSep);
+    var changed = this.quill.getContents(off, endIncSep);
+    var d = orig.diff(changed);
+
+    var iEnd = 0;
+    for (var i = 0; i < d.ops.length; i++) {
+      if (d.ops[i].retain) {
+        iEnd += d.ops[i].retain;
+      };
+      if (d.ops[i].delete) {
+        iEnd -= d.ops[i].delete;
+      };
+      if (d.ops[i].insert) {
+        iEnd += d.ops[i].insert.length;
+      }
+    }
+    var iBeg = iEnd;
+    for (var _i = d.ops.length - 1; _i >= 0; _i--) {
+      if (d.ops[_i].retain) {
+        iEnd -= d.ops[_i].retain;
+      };
+      if (d.ops[_i].delete) {
+        iBeg = iEnd - d.ops[_i].delete;
+        if (!EditorTextSdk.replaceText(iText, iBeg, iEnd, "")) {
+          console.warn('Could not replaceText due to error ' + EditorTextSdk.getErrorMessage());
+        }
+      };
+      if (d.ops[_i].insert) {
+        if (!EditorTextSdk.replaceText(iText, iEnd, iEnd, d.ops[_i].insert)) {
+          console.warn('Could not replaceText due to error ' + EditorTextSdk.getErrorMessage());
+        }
+        iEnd -= d.ops[_i].insert.length;
+      }
+    }
+    off += endIncSep;
+  }
+
   if (texts.length != this.wwTexts.length - 1) {
     console.warn("Unexpected length difference in WoodWing getTexts() and checked Divvun texts!");
     console.warn(texts);
@@ -394,13 +437,13 @@ DivvunEditor.prototype.exitAndApply = function () {
   if (texts[texts.length - 1] !== "") {
     console.warn("Unexpected non-empty last element of checked Divvun texts: ", texts[texts.length - 1]);
   }
-  for (var i = 0; i < texts.length - 1; i++) {
-    if (this.wwTexts[i] === texts[i]) {
+  for (var _i2 = 0; _i2 < texts.length - 1; _i2++) {
+    if (this.wwTexts[_i2] === texts[_i2]) {
       continue;
     }
-    console.log("Replacing text " + i + ", original-length=" + this.wwTexts[i].length + ", new-length=" + texts[i].length);
-    if (!EditorTextSdk.replaceText(i, 0, this.wwTexts[i].length, texts[i])) {
-      alert('Could not replaceText due to error ' + EditorTextSdk.getErrorMessage());
+    console.log("Replacing text " + _i2 + ", original-length=" + this.wwTexts[_i2].length + ", new-length=" + texts[_i2].length);
+    if (!EditorTextSdk.replaceText(_i2, 0, this.wwTexts[_i2].length, texts[_i2])) {
+      console.warn('Could not replaceText due to error ' + EditorTextSdk.getErrorMessage());
     }
   }
   this.editorWrapper.remove();

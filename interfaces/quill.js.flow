@@ -2,7 +2,12 @@
 
 declare function QuillModule(any:any): void;
 
-type Delta = { ops: Array<{retain:number}|{insert:string|{}}|{delete:number}> };
+type ops = Array<{retain:number}|{insert:string|{}}|{delete:number}>;
+declare class Delta {
+  ops: ops;
+  diff(d: Delta): Delta;
+};
+type delta = { ops: ops };
 
 declare class Quill {
   constructor(container: string|HTMLElement, properties?: {}): Quill;
@@ -15,8 +20,11 @@ declare class Quill {
   getLength(): number;
   getText(): any;
   formatText(index: number, length: number, format: string|Object, value: any, source?: string): void;
-  getContents(): any;
+  getContents(): Delta;
+  getContents(index: number): Delta;
+  getContents(index: number, remaining: number): Delta;
   setContents(delta: Delta): void;
+  setContents(delta: delta): void;
   setText(str: string): void;
   deleteText(index: number, length: number, source: string): void;
   on(event: string, f: Function): void;

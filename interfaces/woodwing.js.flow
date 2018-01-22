@@ -1,5 +1,7 @@
 declare class EditorTextSdk {
   static getTexts(): Array<string>;
+  static replaceText(text: number, startOffset: number, endOffset: number, replacement: string): void;
+  static getErrorMessage(): string;
 }
 
 declare module 'EditorTextSdk' {
