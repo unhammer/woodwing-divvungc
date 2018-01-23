@@ -22,7 +22,7 @@ mkdir -p "${PREFIX}"/share/giella/sme # From own machine, scp all the langdata t
 mkdir -p "${PREFIX}"/share/apertium/modes
 cat >"${PREFIX}"/share/apertium/modes/sme-sme_spell.mode <<EOF
 
-${PREFIX}/bin/hfst-tokenise -g -S '${PREFIX}/share/giella/sme/tokeniser-gramcheck-gt-desc.pmhfst' | ${PREFIX}/bin/vislcg3 --quiet -g '${PREFIX}/share/giella/sme/mwe-dis.cg3' | ${PREFIX}/bin/cg-mwesplit | ${PREFIX}/bin/divvun-cgspell -m '${PREFIX}/share/giella/sme/errmodel.default.hfst' -l  '${PREFIX}/share/giella/sme/acceptor.default.hfst' -n 25 | ${PREFIX}/bin/vislcg3 --quiet -g '${PREFIX}/share/giella/sme/disambiguator.cg3' | ${PREFIX}/bin/vislcg3 --quiet -g '${PREFIX}/share/giella/sme/spelltag.cg3' | ${PREFIX}/bin/divvun-suggest --json '${PREFIX}/share/giella/sme/generator-gt-norm.hfstol' '${PREFIX}/share/giella/sme/errors.xml'
+${PREFIX}/bin/hfst-tokenise -g -S '${PREFIX}/share/giella/sme/tokeniser-gramcheck-gt-desc.pmhfst' | ${PREFIX}/bin/vislcg3 --quiet -g '${PREFIX}/share/giella/sme/mwe-dis.cg3' | ${PREFIX}/bin/cg-mwesplit | ${PREFIX}/bin/divvun-cgspell -m '${PREFIX}/share/giella/sme/errmodel.default.hfst' -l  '${PREFIX}/share/giella/sme/acceptor.default.hfst' -n 25 | ${PREFIX}/bin/vislcg3 --quiet -g '${PREFIX}/share/giella/sme/disambiguator.cg3' | ${PREFIX}/bin/vislcg3 --quiet -g '${PREFIX}/share/giella/sme/spellchecker.cg3' | ${PREFIX}/bin/divvun-suggest --json '${PREFIX}/share/giella/sme/generator-gt-norm.hfstol' '${PREFIX}/share/giella/sme/errors.xml'
 
 EOF
 
