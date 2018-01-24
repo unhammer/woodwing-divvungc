@@ -442,7 +442,7 @@ DivvunEditor.prototype.exitAndApply = function () {
     console.warn("Unexpected length difference in WoodWing getTexts() and checked Divvun texts!");
     console.warn(texts);
     console.warn(this.wwTexts);
-    alert("Unexpected length difference in WoodWing and checked Divvun texts, not applying changes.");
+    alert("Unexpected length difference in WoodWing and checked Divvun texts (did you remove/add a '" + this.wwSep + "'?).\nNot applying changes.");
 
     return this.cancel();
   }
