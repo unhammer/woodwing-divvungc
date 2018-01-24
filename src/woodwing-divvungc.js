@@ -315,7 +315,6 @@ function keepKeypresses(elt/*:HTMLElement*/) {
   let keypress/*:string*/ = 'keypress'; // type annotated for flow
   elt.addEventListener(keypress,
                        function(event){
-                         console.log("d: keypress",event);
                          event.stopPropagation();
                        },
                        {

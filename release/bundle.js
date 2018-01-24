@@ -287,7 +287,6 @@ var textCutOff = function textCutOff(str, max_B) {
 function keepKeypresses(elt) {
   var keypress = 'keypress';
   elt.addEventListener(keypress, function (event) {
-    console.log("d: keypress", event);
     event.stopPropagation();
   }, {
     capture: true,
