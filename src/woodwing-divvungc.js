@@ -308,9 +308,27 @@ var textCutOff = function(str/*:string*/, max_B/*:number*/)/*:number*/ {
 
 
 
+/* WoodWing grabs keypresses in the writr and inserts them into
+ * CKEDITOR. We need to override that while our editor is active.
+ */
+function keepKeypresses(elt/*:HTMLElement*/) {
+  let keypress/*:string*/ = 'keypress'; // type annotated for flow
+  elt.addEventListener(keypress,
+                       function(event){
+                         console.log("d: keypress",event);
+                         event.stopPropagation();
+                       },
+                       {
+                         capture: true,
+                         once: false,
+                         passive: true
+                       });
+}
+
 var DivvunEditor = function(editorWrapper/*:HTMLElement*/, mode/*:string*/, wwTexts/*:Array<string>*/)/*:void*/ {
   let self = this;
   this.editorWrapper = editorWrapper;
+  keepKeypresses(editorWrapper);
   let repmenu = $('<div id="divvun-repmenu" style="display:none" role="listbox"><div style="left: 0px;" id="divvun-repmenu_co" role="presentation"><table id="divvun-repmenu_tbl" role="presentation" cellspacing="0" border="0" cellpadding="0"></table></div></div>');
   let editorDiv = $('<div spellcheck="false">');
   $(editorWrapper)
@@ -332,6 +350,7 @@ var DivvunEditor = function(editorWrapper/*:HTMLElement*/, mode/*:string*/, wwTe
     },
     theme: 'snow',
     placeholder: '(no text)'
+    // https://github.com/quilljs/quill/issues/1928
     // , readOnly: true
   });
 

@@ -290,9 +290,22 @@ var textCutOff = function textCutOff(str, max_B) {
   return minu8 + found + 1;
 };
 
+function keepKeypresses(elt) {
+  var keypress = 'keypress';
+  elt.addEventListener(keypress, function (event) {
+    console.log("d: keypress", event);
+    event.stopPropagation();
+  }, {
+    capture: true,
+    once: false,
+    passive: true
+  });
+}
+
 var DivvunEditor = function DivvunEditor(editorWrapper, mode, wwTexts) {
   var self = this;
   this.editorWrapper = editorWrapper;
+  keepKeypresses(editorWrapper);
   var repmenu = $('<div id="divvun-repmenu" style="display:none" role="listbox"><div style="left: 0px;" id="divvun-repmenu_co" role="presentation"><table id="divvun-repmenu_tbl" role="presentation" cellspacing="0" border="0" cellpadding="0"></table></div></div>');
   var editorDiv = $('<div spellcheck="false">');
   $(editorWrapper).append(editorDiv).append(repmenu);
