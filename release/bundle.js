@@ -387,6 +387,17 @@ var DivvunEditor = function DivvunEditor(editorWrapper, mode, wwTexts) {
 };
 
 DivvunEditor.prototype.wwSep = "❡\n";
+DivvunEditor.prototype.wwSepRe = new RegExp(DivvunEditor.prototype.wwSep, "g");
+DivvunEditor.prototype.wwSepsInString = function (str) {
+  var m = str.match(this.wwSepRe);
+  return m ? m.length : 0;
+};
+DivvunEditor.prototype.wwSepsInDelta = function (delta) {
+  var self = this;
+  return delta.ops.reduce(function (acc, op) {
+    return op.insert ? acc + self.wwSepsInString(op.insert) : acc;
+  }, 0);
+};
 
 DivvunEditor.prototype.cancel = function () {
   this.editorWrapper.remove();
@@ -727,6 +738,12 @@ DivvunEditor.prototype.checkOnIdle = function () {
 DivvunEditor.prototype.onTextChange = function (delta, oldDelta, source) {
   if (source == 'api') {} else if (source == 'user') {
     ErrorBlot.hiderep();
+    var oldSeps = this.wwSepsInDelta(oldDelta);
+    var newSeps = this.wwSepsInDelta(this.quill.getContents());
+    if (oldSeps !== newSeps) {
+      console.warn("Number of seps changed! Reverting.", oldSeps, newSeps);
+      this.quill.setContents(oldDelta);
+    }
   }
 };
 
