@@ -349,7 +349,8 @@ var DivvunEditor = function(editorWrapper/*:HTMLElement*/, mode/*:string*/, wwTe
     },
     theme: 'snow',
     placeholder: '(no text)'
-    // https://github.com/quilljs/quill/issues/1928
+    // TODO: readonly, by using normal DOM click event and Quill.find(domElt)
+    // https://github.com/quilljs/quill/issues/1928#issuecomment-362153846
     // , readOnly: true
   });
 
