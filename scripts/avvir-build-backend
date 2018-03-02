@@ -17,14 +17,9 @@ mkdir -p ~/divvun
 cd ~/divvun
 export PREFIX="$HOME/divvun/PREFIX/"
 
-mkdir -p "${PREFIX}"/share/giella/sme # From own machine, scp all the langdata to server:divvun/PREFIX/share/giella/sme/
-
-mkdir -p "${PREFIX}"/share/apertium/modes
-cat >"${PREFIX}"/share/apertium/modes/sme-sme_spell.mode <<EOF
-
-${PREFIX}/bin/hfst-tokenise -g -S '${PREFIX}/share/giella/sme/tokeniser-gramcheck-gt-desc.pmhfst' | ${PREFIX}/bin/vislcg3 --quiet -g '${PREFIX}/share/giella/sme/mwe-dis.cg3' | ${PREFIX}/bin/cg-mwesplit | ${PREFIX}/bin/divvun-cgspell -m '${PREFIX}/share/giella/sme/errmodel.default.hfst' -l  '${PREFIX}/share/giella/sme/acceptor.default.hfst' -n 25 | ${PREFIX}/bin/vislcg3 --quiet -g '${PREFIX}/share/giella/sme/disambiguator.cg3' | ${PREFIX}/bin/vislcg3 --quiet -g '${PREFIX}/share/giella/sme/spellchecker.cg3' | ${PREFIX}/bin/divvun-suggest --json --lang se '${PREFIX}/share/giella/sme/generator-gt-norm.hfstol' '${PREFIX}/share/giella/sme/errors.xml'
-
-EOF
+# Ensure we have a UTF-8 locale (autotools perl complains about this):
+LC_ALL=$(locale -a|grep UTF-8|head -1)
+export LC_ALL
 
 # It seems like g++/clang, git and svn are already there, but we need these:
 sudo port install cmake         # visclg3
@@ -74,7 +69,6 @@ cp /opt/local/lib/libarchive.* "${PREFIX}/lib"
 
 git clone https://github.com/divvun/divvun-gramcheck/
 (
-    set -u -e
     cd divvun-gramcheck
     export CXXFLAGS="-I${PREFIX}/include ${CXXFLAGS:-}"
     export CPPFLAGS="-I${PREFIX}/include ${CPPFLAGS:-}"
@@ -88,11 +82,22 @@ git clone https://github.com/divvun/divvun-gramcheck/
     make install
 )
 
+# Get language data using the script from this repo:
+git clone https://github.com/divvun/woodwing-divvungc
+(
+    cd woodwing-divvungc
+    export PATH="${PREFIX}/bin:$PATH"
+    bash scripts/update-giella-sme
+)
 
 # We just run this from the source dir:
 git clone -b giellatekno https://github.com/goavki/apertium-apy
-LC_ALL=en_US.UTF-8 printf "\xc3\xa1vvir:test\n" >apertium-apy/users
+(
+    cd apertium-apy
+    LC_ALL=en_US.UTF-8 printf "\xc3\xa1vvir:test\n" >users
+)
 
+# Make our launchd service:
 cat >no.divvun.gramcheck.plist <<EOF
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"

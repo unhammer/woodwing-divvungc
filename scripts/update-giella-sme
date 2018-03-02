@@ -1,0 +1,76 @@
+#!/bin/bash
+
+set -e -u
+
+iso639=sme
+bcp47=se
+package=giella-"${iso639}"
+pipename="${iso639}"spell
+modename="${iso639}"-"${iso639}"_spell
+
+# Run everything from a tempdir which we remove on exit:
+tmpdir=$(mktemp -d -t divvun-updater.XXXXXXXXXX)
+trap 'rm -rf "${tmpdir}"' EXIT
+cd "${tmpdir}"
+
+# Ensure we have a UTF-8 locale (at least some hfst tools need this)
+LC_ALL=$(locale -a|grep UTF-8|head -1)
+export LC_ALL
+
+# Pick the "latest" distro:
+dists=$(curl -Ss 'https://apertium.projectjj.com/apt/nightly/dists/?C=M;O=A')
+dist=$(awk -F'href="|"' '/<tr><td><a href/&&$2{u=$2}END{print u}' <<<"${dists}")
+
+# Find our package in that distro:
+packages=$(curl -Ss https://apertium.projectjj.com/apt/nightly/dists/"${dist}"/main/binary-amd64/Packages)
+pool=$(awk -v package="${package}" '/^Package:/{p=($2 == package)} p && /^Filename:/{print $2;exit}' <<< "${packages}")
+url=https://apertium.projectjj.com/apt/nightly/"${pool}"
+
+curl -Ss "${url}" >"${package}.deb"
+
+ar x "${package}.deb"
+
+zcheck=./usr/share/voikko/4/"${bcp47}".zcheck
+for f in data.tar.*; do
+    tar xf "$f" "${zcheck}"
+done
+
+# Fail if we don't give any error message for space-before-punct-mark:
+# (assuming all languages mark this as an error for their default pipeline …)
+res=$(echo ' .' | divvun-checker --archive "${zcheck}")
+grep -q '".",1,2' <<<"${res}"
+
+# Fail if pipename in pipespec doesn't give any JSON (though we can't
+# expect an error for ' .' here):
+mkdir -p data
+unzip -d data "${zcheck}"
+if [[ ! -f data/spellchecker.bin ]]; then
+    # TODO: currently missing from zcheck:
+    cg-comp "${HOME}"/divvun/PREFIX/share/giella/"${iso639}"/spellchecker.cg3 data/spellchecker.bin
+fi
+# apertium-apy expects no shebangs nor newlines, should be fixed
+# upstream but workaround for now:
+divvun-gen-sh -j data/pipespec.xml "${pipename}" \
+    | grep -v '^#'                               \
+    | tr '\n' ' '                                \
+    | sed 's/\\ //g'                             \
+    > "${modename}".mode
+res2=$(echo '.' | sh "${modename}".mode)
+grep -q '"text":".\\n"' <<<"${res2}"
+
+# If we got this far, extract into the right place:
+export PREFIX="$HOME/divvun/PREFIX/"
+export DATADIR="${PREFIX}/share/giella/${iso639}"
+export MODESDIR="${PREFIX}/share/apertium/modes"
+mkdir -p "${DATADIR}"
+rsync -avh data/ "${DATADIR}"/
+mkdir -p "${MODESDIR}"
+divvun-gen-sh -j "${DATADIR}"/pipespec.xml "${pipename}" \
+    | grep -v '^#'                                       \
+    | tr '\n' ' '                                        \
+    | sed 's/\\ //g'                                     \
+    > "${MODESDIR}"/"${modename}".mode
+res3=$(echo '.' | sh "${MODESDIR}"/"${modename}".mode)
+grep -q '"text":".\\n"' <<<"${res3}"
+
+echo "Successfully updated divvun giella-${iso639} language data -- now we just need to restart apertium-apy"
