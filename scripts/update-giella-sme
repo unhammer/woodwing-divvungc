@@ -73,4 +73,4 @@ divvun-gen-sh -j "${DATADIR}"/pipespec.xml "${pipename}" \
 res3=$(echo '.' | sh "${MODESDIR}"/"${modename}".mode)
 grep -q '"text":".\\n"' <<<"${res3}"
 
-echo "Successfully updated divvun giella-${iso639} language data -- now we just need to restart apertium-apy"
+echo "Successfully updated divvun giella-${iso639} language data -- apy will use it next time it restarts the pipe"

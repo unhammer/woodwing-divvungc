@@ -16,6 +16,8 @@ set -e -u
 mkdir -p ~/divvun
 cd ~/divvun
 export PREFIX="$HOME/divvun/PREFIX/"
+LOGS="${PREFIX}"/var/log
+mkdir -p "${LOGS}"
 
 # Ensure we have a UTF-8 locale (autotools perl complains about this):
 LC_ALL=$(locale -a|grep UTF-8|head -1)
@@ -97,7 +99,7 @@ git clone -b giellatekno https://github.com/goavki/apertium-apy
     LC_ALL=en_US.UTF-8 printf "\xc3\xa1vvir:test\n" >users
 )
 
-# Make our launchd service:
+# Make our launchd services:
 cat >no.divvun.gramcheck.plist <<EOF
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
@@ -130,12 +132,50 @@ cat >no.divvun.gramcheck.plist <<EOF
         <key>LC_ALL</key> <string>en_US.UTF-8</string>
         <key>PATH</key>   <string>${PREFIX}/bin:/opt/local/bin:/opt/local/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
     </dict>
+<key>StandardErrorPath</key><string>${LOGS}/no.divvun.gramcheck.err</string>
+<key>StandardOutPath</key>  <string>${LOGS}/no.divvun.gramcheck.out</string>
+</dict>
+</plist>
+EOF
+
+cat >no.divvun.update.plist <<EOF
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+"http://www.apple.com/DTDs/PropertyList-1.0.dtd" >
+<plist version='1.0'>
+<dict>
+<key>Label</key><string>no.divvun.update</string>
+<key>ProgramArguments</key>
+<array>
+        <string>/bin/bash</string>
+        <string>${PWD}/woodwing-divvungc/scripts/update-giella-sme</string>
+</array>
+<key>UserName</key><string>$USER</string>
+<key>Disabled</key><false/>
+<key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>3</integer>
+        <key>Minute</key>
+        <integer>15</integer>
+    </dict>
+<key>RunAtLoad</key><true/>
+<key>EnvironmentVariables</key>
+    <dict>
+        <key>LC_ALL</key> <string>en_US.UTF-8</string>
+        <key>PATH</key>   <string>${PREFIX}/bin:/opt/local/bin:/opt/local/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+<key>StandardErrorPath</key><string>${LOGS}/no.divvun.update.err</string>
+<key>StandardOutPath</key>  <string>${LOGS}/no.divvun.update.out</string>
 </dict>
 </plist>
 EOF
 
 sudo cp no.divvun.gramcheck.plist /Library/LaunchDaemons/
 sudo launchctl load /Library/LaunchDaemons/no.divvun.gramcheck.plist
+
+sudo cp no.divvun.update.plist /Library/LaunchDaemons/
+sudo launchctl load /Library/LaunchDaemons/no.divvun.update.plist
 
 ### To catch output, open a second terminal and do
 # $ sudo launchctl debug system/no.divvun.gramcheck --stderr --stdout
