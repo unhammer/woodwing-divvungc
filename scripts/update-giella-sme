@@ -8,6 +8,9 @@ package=giella-"${iso639}"
 pipename="${iso639}"spell
 modename="${iso639}"-"${iso639}"_spell
 
+export PREFIX="$HOME/divvun/PREFIX/"
+export PATH="$PREFIX/bin:$PATH"
+
 echo "$(date -R)	Starting $0"
 
 # Run everything from a tempdir which we remove on exit:
@@ -61,7 +64,6 @@ res2=$(echo '.' | sh "${modename}".mode)
 grep -q '"text":".\\n"' <<<"${res2}"
 
 # If we got this far, extract into the right place:
-export PREFIX="$HOME/divvun/PREFIX/"
 export DATADIR="${PREFIX}/share/giella/${iso639}"
 export MODESDIR="${PREFIX}/share/apertium/modes"
 mkdir -p "${DATADIR}"
