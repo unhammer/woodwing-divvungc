@@ -31,7 +31,7 @@ packages=$(curl -Ss https://apertium.projectjj.com/apt/nightly/dists/"${dist}"/m
 pool=$(awk -v package="${package}" '/^Package:/{p=($2 == package)} p && /^Filename:/{print $2;exit}' <<< "${packages}")
 url=https://apertium.projectjj.com/apt/nightly/"${pool}"
 
-curl -Ss "${url}" >"${package}.deb"
+curl "${url}" >"${package}.deb"
 
 ar x "${package}.deb"
 
