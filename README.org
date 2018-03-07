@@ -45,7 +45,7 @@ Then add these lines to the =plugins= object of
 
 #+BEGIN_SRC js
      printEditor: [
-       '../../config/plugins/divvungc/bundle.js'
+       '../config/plugins/divvungc/bundle.js'
      ]
 #+END_SRC
 
@@ -55,7 +55,7 @@ making it e.g.
      contentStation: [
      ],
      printEditor: [
-       '../../config/plugins/divvungc/bundle.js'
+       '../config/plugins/divvungc/bundle.js'
      ]
    }
 #+END_SRC
