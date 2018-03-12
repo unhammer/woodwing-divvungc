@@ -164,7 +164,7 @@ cat >no.divvun.update.plist <<EOF
         <key>Minute</key>
         <integer>15</integer>
     </dict>
-<key>RunAtLoad</key><true/>
+<key>RunAtLoad</key><false/>
 <key>EnvironmentVariables</key>
     <dict>
         <key>LC_ALL</key> <string>en_US.UTF-8</string>
@@ -176,8 +176,45 @@ cat >no.divvun.update.plist <<EOF
 </plist>
 EOF
 
+cat >no.divvun.restart-apy.plist <<EOF
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+"http://www.apple.com/DTDs/PropertyList-1.0.dtd" >
+<plist version='1.0'>
+<dict>
+<key>Label</key><string>no.divvun.restart-apy</string>
+<key>ProgramArguments</key>
+<array>
+        <string>launchctl</string>
+        <string>kill</string>
+        <string>TERM</string>
+        <string>system/no.divvun.gramcheck</string>
+</array>
+<key>Disabled</key><false/>
+<key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>4</integer>
+        <key>Minute</key>
+        <integer>15</integer>
+    </dict>
+<key>RunAtLoad</key><false/>
+<key>EnvironmentVariables</key>
+    <dict>
+        <key>LC_ALL</key> <string>en_US.UTF-8</string>
+        <key>PATH</key>   <string>${PREFIX}/bin:/opt/local/bin:/opt/local/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+<key>StandardErrorPath</key><string>${LOGS}/no.divvun.restart-apy.err</string>
+<key>StandardOutPath</key>  <string>${LOGS}/no.divvun.restart-apy.out</string>
+</dict>
+</plist>
+EOF
+
 sudo cp no.divvun.gramcheck.plist /Library/LaunchDaemons/
 sudo launchctl load /Library/LaunchDaemons/no.divvun.gramcheck.plist
+
+sudo cp no.divvun.restart-apy.plist /Library/LaunchDaemons/
+sudo launchctl load /Library/LaunchDaemons/no.divvun.restart-apy.plist
 
 sudo cp no.divvun.update.plist /Library/LaunchDaemons/
 sudo launchctl load /Library/LaunchDaemons/no.divvun.update.plist
