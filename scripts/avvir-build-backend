@@ -134,6 +134,11 @@ cat >no.divvun.gramcheck.plist <<EOF
     </dict>
 <key>StandardErrorPath</key><string>${LOGS}/no.divvun.gramcheck.err</string>
 <key>StandardOutPath</key>  <string>${LOGS}/no.divvun.gramcheck.out</string>
+<key>SoftResourceLimits</key>
+<dict>
+    <key>NumberOfFiles</key>
+    <integer>2048</integer>
+</dict>
 </dict>
 </plist>
 EOF
@@ -182,4 +187,3 @@ sudo launchctl load /Library/LaunchDaemons/no.divvun.update.plist
 ### then restart the service with
 # $ sudo launchctl stop no.divvun.gramcheck
 # $ sudo launchctl start no.divvun.gramcheck
-
