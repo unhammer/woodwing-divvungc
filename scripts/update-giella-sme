@@ -67,7 +67,7 @@ grep -q '"text":".\\n"' <<<"${res2}"
 export DATADIR="${PREFIX}/share/giella/${iso639}"
 export MODESDIR="${PREFIX}/share/apertium/modes"
 mkdir -p "${DATADIR}"
-rsync -avh data/ "${DATADIR}"/
+rsync -avh --update data/ "${DATADIR}"/
 mkdir -p "${MODESDIR}"
 divvun-gen-sh -j "${DATADIR}"/pipespec.xml "${pipename}" \
     | grep -v '^#'                                       \
