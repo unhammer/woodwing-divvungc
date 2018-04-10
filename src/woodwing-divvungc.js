@@ -685,9 +685,14 @@ DivvunEditor.prototype.applyErrs = function(text, res/*:result*/, off/*:number*/
     if(false && igntyps.has(err.typ)) { // ignores TODO
       return;
     }
+    if(err.typ == "typo" && err.rep.length == 0) {
+      console.warn("Unexpected zero replacements for '" + err.str + "' at error indices '" + err.beg + ", " + err.len + "', skipping");
+      return;
+    }
     if(err.str !== text.substr(err.beg, err.len)) {
-      // TODO: should we fail/skip if form differs?
-      console.warn("Unexpected difference between error string '" + err.str + "' and text at error indices '" + text.substr(err.beg, err.len) + "'");
+      // TODO: should we really fail/skip if form differs?
+      console.warn("Unexpected difference between error string '" + err.str + "' and text at error indices '" + text.substr(err.beg, err.len) + "', skipping");
+      return;
     }
     this.quill.formatText(err.beg,
                           err.len,

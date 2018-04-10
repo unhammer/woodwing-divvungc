@@ -641,8 +641,13 @@ DivvunEditor.prototype.applyErrs = function (text, res, off) {
     if (false && igntyps.has(err.typ)) {
       return;
     }
+    if (err.typ == "typo" && err.rep.length == 0) {
+      console.warn("Unexpected zero replacements for '" + err.str + "' at error indices '" + err.beg + ", " + err.len + "', skipping");
+      return;
+    }
     if (err.str !== text.substr(err.beg, err.len)) {
-      console.warn("Unexpected difference between error string '" + err.str + "' and text at error indices '" + text.substr(err.beg, err.len) + "'");
+      console.warn("Unexpected difference between error string '" + err.str + "' and text at error indices '" + text.substr(err.beg, err.len) + "', skipping");
+      return;
     }
     _this3.quill.formatText(err.beg, err.len, "error", err);
   });
