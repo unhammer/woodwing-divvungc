@@ -11,7 +11,7 @@ modename="${iso639}"-"${iso639}"_spell
 export PREFIX="$HOME/divvun/PREFIX/"
 export PATH="$PREFIX/bin:$PATH"
 
-echo "$(date -R)	Starting $0"
+echo "$(date -R)	$0: starting"
 
 # Run everything from a tempdir which we remove on exit:
 tmpdir=$(mktemp -d -t divvun-updater.XXXXXXXXXX)
@@ -40,10 +40,17 @@ for f in data.tar.*; do
     tar xf "$f" "${zcheck}"
 done
 
+sanity_grep () {
+    if ! grep -q "$2" <<<"$3"; then
+        echo "$(date -R)	$0: ERROR: Couldn't find $2 in $3 when running test '$1', updating failed" >&2
+        exit 65
+    fi
+}
+
 # Fail if we don't give any error message for space-before-punct-mark:
 # (assuming all languages mark this as an error for their default pipeline …)
 res=$(echo ' .' | divvun-checker --archive "${zcheck}")
-grep -q '".",1,2' <<<"${res}"
+sanity_grep "zcheck" '".",1,2' "${res}"
 
 # Fail if pipename in pipespec doesn't give any JSON (though we can't
 # expect an error for ' .' here):
@@ -61,7 +68,20 @@ divvun-gen-sh -j data/pipespec.xml "${pipename}" \
     | sed 's/\\ //g'                             \
     > "${modename}".mode
 res2=$(echo '.' | sh "${modename}".mode)
-grep -q '"text":".\\n"' <<<"${res2}"
+sanity_grep "simple" '"text":".\\n"' "${res2}"
+
+# mode-specific tests:
+case $pipename in
+    smespell)
+        res_s=$(echo 'sátnejodiheaddji' | sh "${modename}".mode)
+        sanity_grep "Err/Orth" 'sátnejođiheaddji' "${res_s}"
+        res_s2=$(echo 'stnejodiheaddji' | sh "${modename}".mode)
+        sanity_grep "speller" 'sátnejođiheaddji' "${res_s2}"
+        res_s3=$(echo 'Finnmarku' | sh "${modename}".mode)
+        sanity_grep "Err/orth-a-á" 'Finnmárku' "${res_s3}"
+    ;;
+esac
+
 
 # If we got this far, extract into the right place:
 export DATADIR="${PREFIX}/share/giella/${iso639}"
@@ -74,7 +94,8 @@ divvun-gen-sh -j "${DATADIR}"/pipespec.xml "${pipename}" \
     | tr '\n' ' '                                        \
     | sed 's/\\ //g'                                     \
     > "${MODESDIR}"/"${modename}".mode
+echo "$(date -R)	$0: Installed new language data"
 res3=$(echo '.' | sh "${MODESDIR}"/"${modename}".mode)
-grep -q '"text":".\\n"' <<<"${res3}"
+sanity_grep "installed mode" '"text":".\\n"' "${res3}"
 
-echo "$(date -R)	Successfully updated divvun giella-${iso639} language data -- apy will use it next time it restarts the pipe"
+echo "$(date -R)	$0: Successfully updated divvun giella-${iso639} language data -- apy will use it next time it restarts the pipe"
