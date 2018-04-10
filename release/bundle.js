@@ -385,13 +385,22 @@ var DivvunEditor = function DivvunEditor(editorWrapper, mode, wwTexts) {
   if (false) {
     this.updateIgnored();
   }
-  this.wwTexts = wwTexts;
+  this.wwTexts = this.stashSoftHyphens(wwTexts);
   this.quill.setContents({
     ops: this.wwTexts.map(function (t) {
       return { insert: t + self.wwSep };
     })
   });
   this.check();
+};
+
+DivvunEditor.prototype.stashSoftHyphens = function (texts) {
+  for (var i = 0; i < texts.length; i++) {
+    var words = texts[i].split(/[ \n\t\r.,\/#!$%\^&\*;:{}=\-_`~()]+/);
+
+    texts[i] = texts[i].replace(/\u00AD/g, "");
+  }
+  return texts;
 };
 
 DivvunEditor.prototype.wwSep = "❡\n";

@@ -423,11 +423,23 @@ var DivvunEditor = function(editorWrapper/*:HTMLElement*/, mode/*:string*/, wwTe
   if(false) {                   // ignores TODO
     this.updateIgnored();
   }
-  this.wwTexts = wwTexts;       // "const", don't change this elsewhere
+  this.wwTexts = this.stashSoftHyphens(wwTexts);       // "const", don't change this elsewhere
   this.quill.setContents({
     ops: this.wwTexts.map(function(t){ return { insert: t + self.wwSep }; })
   });
   this.check();
+};
+
+DivvunEditor.prototype.stashSoftHyphens = function(texts/*:Array<string>*/) {
+  // if(!this.withSoftHyphen) {
+  //   this.withSoftHyphen = {};
+  // }
+  for(let i = 0; i < texts.length; i++) {
+    let words = texts[i].split(/[ \n\t\r.,\/#!$%\^&\*;:{}=\-_`~()]+/);
+    // TODO: withSoftHyphen[word.replace(shy,"")]=word
+    texts[i] = texts[i].replace(/\u00AD/g, "");
+  }
+  return texts;
 };
 
 DivvunEditor.prototype.wwSep = "❡\n";
