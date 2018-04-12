@@ -689,9 +689,10 @@ DivvunEditor.prototype.applyErrs = function(text, res/*:result*/, off/*:number*/
       console.warn("Unexpected zero replacements for '" + err.str + "' at error indices '" + err.beg + ", " + err.len + "', skipping");
       return;
     }
-    if(err.str !== text.substr(err.beg, err.len)) {
+    let ftext = this.getFText(); // full text, since err.beg includes offset
+    if(err.str !== ftext.substr(err.beg, err.len)) {
       // TODO: should we really fail/skip if form differs?
-      console.warn("Unexpected difference between error string '" + err.str + "' and text at error indices '" + text.substr(err.beg, err.len) + "', skipping");
+      console.warn("Unexpected difference between error string '" + err.str + "' and ftext at error beg=" + err.beg + ", len=" + err.len + " ftext.substr='" + ftext.substr(err.beg, err.len) + "', skipping");
       return;
     }
     this.quill.formatText(err.beg,
