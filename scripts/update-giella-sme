@@ -79,6 +79,10 @@ case $pipename in
         sanity_grep "speller" 'sátnejođiheaddji' "${res_s2}"
         res_s3=$(echo 'Finnmarku' | sh "${modename}".mode)
         sanity_grep "Err/orth-a-á" 'Finnmárku' "${res_s3}"
+        res_s4=$(echo 'johttigohte' | sh "${modename}".mode)
+        sanity_grep "overactive-disambiguator" '"johtigohte"' "${res_s4}"
+        res_s5=$(echo 'buorrre' | sh "${modename}".mode)
+        sanity_grep "three-rs" '"buorre"' "${res_s5}"
     ;;
 esac
 
