@@ -333,7 +333,7 @@ function keepKeypresses(elt/*:HTMLElement*/) {
                        });
 }
 
-var DivvunEditor = function(editorWrapper/*:HTMLElement*/, mode/*:string*/, wwTexts/*:Array<string>*/)/*:void*/ {
+var DivvunEditor = function(editorWrapper/*:HTMLElement*/, mode/*:string*/, wwTextsRaw/*:Array<string>*/)/*:void*/ {
   let self = this;
   this.editorWrapper = editorWrapper;
   keepKeypresses(editorWrapper);
@@ -423,7 +423,8 @@ var DivvunEditor = function(editorWrapper/*:HTMLElement*/, mode/*:string*/, wwTe
   if(false) {                   // ignores TODO
     this.updateIgnored();
   }
-  this.wwTexts = this.stashSoftHyphens(wwTexts);       // "const", don't change this elsewhere
+  this.wwTextsRaw = wwTextsRaw;                     // "const", don't change this elsewhere
+  this.wwTexts = this.stashSoftHyphens(wwTextsRaw); // "const", don't change this elsewhere
   this.quill.setContents({
     ops: this.wwTexts.map(function(t){ return { insert: t + self.wwSep }; })
   });
@@ -435,7 +436,7 @@ DivvunEditor.prototype.stashSoftHyphens = function(texts/*:Array<string>*/) {
   //   this.withSoftHyphen = {};
   // }
   for(let i = 0; i < texts.length; i++) {
-    let words = texts[i].split(/[ \n\t\r.,\/#!$%\^&\*;:{}=\-_`~()]+/);
+    // let words = texts[i].split(/[ \n\t\r.,\/#!$%\^&\*;:{}=\-_`~()]+/);
     // TODO: withSoftHyphen[word.replace(shy,"")]=word
     texts[i] = texts[i].replace(/\u00AD/g, "");
   }
@@ -444,7 +445,7 @@ DivvunEditor.prototype.stashSoftHyphens = function(texts/*:Array<string>*/) {
 
 DivvunEditor.prototype.wwSep = "❡\n";
 DivvunEditor.prototype.wwSepRe = new RegExp(DivvunEditor.prototype.wwSep, "g");
-DivvunEditor.prototype.wwSepsInString = function(str) {
+DivvunEditor.prototype.wwSepsInString = function(str/*:string*/) {
   let m = str.match(this.wwSepRe);
   return m ? m.length : 0;
 };
@@ -507,7 +508,8 @@ DivvunEditor.prototype.exitAndApply = function()/*: void*/ {
     console.warn(this.wwTexts);
     alert("Unexpected length difference in WoodWing and checked Divvun texts (did you remove/add a '" + this.wwSep + "'?).\nNot applying changes.");
     // Be conservative here, this could be bad.
-    return this.cancel();
+    this.cancel();
+    return;
   }
 
 
@@ -516,7 +518,18 @@ DivvunEditor.prototype.exitAndApply = function()/*: void*/ {
     let endIncSep = texts[iText].length + this.wwSep.length;
     let orig = new Delta({ ops: [{ insert: this.wwTexts[iText] + this.wwSep }]});
     let changed = this.quill.getContents(textsOff, endIncSep);
-    diff2reps(orig, changed).map(function(r) {
+    let reps = diff2reps(orig, changed);
+    // First, remove soft hyphens in the component we're replacing in,
+    // so we're sure indices line up:
+    if(reps.length > 0) {
+      console.log("Removing soft hyphens in component " + iText, this.wwTextsRaw[iText] !== this.wwTexts[iText], this.wwTextsRaw[iText].length, this.wwTexts[iText].length);
+      if (!EditorTextSdk.replaceText(iText, 0, this.wwTextsRaw[iText].length, this.wwTexts[iText])) {
+        console.warn('Could not remove soft hyphens in test ' + iText + ' for replaceText due to error ' + EditorTextSdk.getErrorMessage());
+        continue;
+      }
+    }
+    // Now perform the actual replacements:
+    reps.map(function(r) {
       console.log("In component " + iText + ", replace substring from " + r.beg + " to " + r.end + " with '" + r.rep + "'");
       if (!EditorTextSdk.replaceText(iText, r.beg, r.end, r.rep)) {
         console.warn('Could not replaceText due to error ' + EditorTextSdk.getErrorMessage());

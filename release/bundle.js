@@ -303,7 +303,7 @@ function keepKeypresses(elt) {
   });
 }
 
-var DivvunEditor = function DivvunEditor(editorWrapper, mode, wwTexts) {
+var DivvunEditor = function DivvunEditor(editorWrapper, mode, wwTextsRaw) {
   var self = this;
   this.editorWrapper = editorWrapper;
   keepKeypresses(editorWrapper);
@@ -385,7 +385,8 @@ var DivvunEditor = function DivvunEditor(editorWrapper, mode, wwTexts) {
   if (false) {
     this.updateIgnored();
   }
-  this.wwTexts = this.stashSoftHyphens(wwTexts);
+  this.wwTextsRaw = wwTextsRaw;
+  this.wwTexts = this.stashSoftHyphens(wwTextsRaw);
   this.quill.setContents({
     ops: this.wwTexts.map(function (t) {
       return { insert: t + self.wwSep };
@@ -396,8 +397,6 @@ var DivvunEditor = function DivvunEditor(editorWrapper, mode, wwTexts) {
 
 DivvunEditor.prototype.stashSoftHyphens = function (texts) {
   for (var i = 0; i < texts.length; i++) {
-    var words = texts[i].split(/[ \n\t\r.,\/#!$%\^&\*;:{}=\-_`~()]+/);
-
     texts[i] = texts[i].replace(/\u00AD/g, "");
   }
   return texts;
@@ -472,7 +471,8 @@ DivvunEditor.prototype.exitAndApply = function () {
     console.warn(this.wwTexts);
     alert("Unexpected length difference in WoodWing and checked Divvun texts (did you remove/add a '" + this.wwSep + "'?).\nNot applying changes.");
 
-    return this.cancel();
+    this.cancel();
+    return;
   }
 
   var textsOff = 0;
@@ -481,7 +481,17 @@ DivvunEditor.prototype.exitAndApply = function () {
     var endIncSep = texts[iText].length + _this2.wwSep.length;
     var orig = new Delta({ ops: [{ insert: _this2.wwTexts[iText] + _this2.wwSep }] });
     var changed = _this2.quill.getContents(textsOff, endIncSep);
-    diff2reps(orig, changed).map(function (r) {
+    var reps = diff2reps(orig, changed);
+
+    if (reps.length > 0) {
+      console.log("Removing soft hyphens in component " + iText, _this2.wwTextsRaw[iText] !== _this2.wwTexts[iText], _this2.wwTextsRaw[iText].length, _this2.wwTexts[iText].length);
+      if (!EditorTextSdk.replaceText(iText, 0, _this2.wwTextsRaw[iText].length, _this2.wwTexts[iText])) {
+        console.warn('Could not remove soft hyphens in test ' + iText + ' for replaceText due to error ' + EditorTextSdk.getErrorMessage());
+        return "continue";
+      }
+    }
+
+    reps.map(function (r) {
       console.log("In component " + iText + ", replace substring from " + r.beg + " to " + r.end + " with '" + r.rep + "'");
       if (!EditorTextSdk.replaceText(iText, r.beg, r.end, r.rep)) {
         console.warn('Could not replaceText due to error ' + EditorTextSdk.getErrorMessage());
@@ -491,7 +501,9 @@ DivvunEditor.prototype.exitAndApply = function () {
   };
 
   for (var iText = 0; iText < texts.length - 1; iText++) {
-    _loop(iText);
+    var _ret = _loop(iText);
+
+    if (_ret === "continue") continue;
   }
 
   this.editorWrapper.remove();
