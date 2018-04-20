@@ -83,6 +83,8 @@ case $pipename in
         sanity_grep "overactive-disambiguator" '"johtigohte"' "${res_s4}"
         res_s5=$(echo 'buorrre' | sh "${modename}".mode)
         sanity_grep "three-rs" '"buorre"' "${res_s5}"
+        res_s6=$(echo 'husket' | sh "${modename}".mode)
+        sanity_grep "transpositions" '"hukset"' "${res_s6}"
     ;;
 esac
 
