@@ -431,7 +431,8 @@ var DivvunEditor = function(editorWrapper/*:HTMLElement*/, mode/*:string*/, wwTe
   this.check();
 };
 
-DivvunEditor.prototype.stashSoftHyphens = function(texts/*:Array<string>*/) {
+DivvunEditor.prototype.stashSoftHyphens = function(textsMut/*:Array<string>*/) {
+  let texts = textsMut.slice();      // avoid stupid mutability
   // if(!this.withSoftHyphen) {
   //   this.withSoftHyphen = {};
   // }
@@ -494,6 +495,17 @@ var diff2reps = function (orig/*:Delta*/, changed/*:Delta*/)/*:Array<{ beg: numb
   return reps;
 };
 
+// In reverse order, importantly
+var allIndicesOf = function(str, char) {
+  for (var a=[],i=str.length; i--;) {
+    if (str[i]===char)
+    {
+      a.push(i);
+    }
+  }
+  return a;
+};
+
 DivvunEditor.prototype.exitAndApply = function()/*: void*/ {
   let texts = this.getFText().split(this.wwSep);
 
@@ -522,11 +534,14 @@ DivvunEditor.prototype.exitAndApply = function()/*: void*/ {
     // First, remove soft hyphens in the component we're replacing in,
     // so we're sure indices line up:
     if(reps.length > 0) {
-      console.log("Removing soft hyphens in component " + iText, this.wwTextsRaw[iText] !== this.wwTexts[iText], this.wwTextsRaw[iText].length, this.wwTexts[iText].length);
-      if (!EditorTextSdk.replaceText(iText, 0, this.wwTextsRaw[iText].length, this.wwTexts[iText])) {
-        console.warn('Could not remove soft hyphens in test ' + iText + ' for replaceText due to error ' + EditorTextSdk.getErrorMessage());
-        continue;
-      }
+      // Only replaceText at the exact indices that have soft hyphens, otherwise we mess up styling:
+      let softHyphs = allIndicesOf(this.wwTextsRaw[iText], "\xAD");
+      console.log("Removing soft hyphens in component " + iText, "differs: ", this.wwTextsRaw[iText] !== this.wwTexts[iText], "wwRaw.length", this.wwTextsRaw[iText].length, "checked.length", this.wwTexts[iText].length, "softHyphs found in wwRaw at: ", softHyphs);
+      softHyphs.forEach(function(i) {
+        if (!EditorTextSdk.replaceText(iText, i, i+1, "")) {
+          console.warn('Could not remove soft hyphens in text ' + iText + ' for replaceText due to error ' + EditorTextSdk.getErrorMessage());
+        }
+      });
     }
     // Now perform the actual replacements:
     reps.map(function(r) {

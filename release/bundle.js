@@ -395,7 +395,8 @@ var DivvunEditor = function DivvunEditor(editorWrapper, mode, wwTextsRaw) {
   this.check();
 };
 
-DivvunEditor.prototype.stashSoftHyphens = function (texts) {
+DivvunEditor.prototype.stashSoftHyphens = function (textsMut) {
+  var texts = textsMut.slice();
   for (var i = 0; i < texts.length; i++) {
     texts[i] = texts[i].replace(/\u00AD/g, "");
   }
@@ -456,6 +457,15 @@ var diff2reps = function diff2reps(orig, changed) {
   return reps;
 };
 
+var allIndicesOf = function allIndicesOf(str, char) {
+  for (var a = [], i = str.length; i--;) {
+    if (str[i] === char) {
+      a.push(i);
+    }
+  }
+  return a;
+};
+
 DivvunEditor.prototype.exitAndApply = function () {
   var _this2 = this;
 
@@ -484,11 +494,13 @@ DivvunEditor.prototype.exitAndApply = function () {
     var reps = diff2reps(orig, changed);
 
     if (reps.length > 0) {
-      console.log("Removing soft hyphens in component " + iText, _this2.wwTextsRaw[iText] !== _this2.wwTexts[iText], _this2.wwTextsRaw[iText].length, _this2.wwTexts[iText].length);
-      if (!EditorTextSdk.replaceText(iText, 0, _this2.wwTextsRaw[iText].length, _this2.wwTexts[iText])) {
-        console.warn('Could not remove soft hyphens in test ' + iText + ' for replaceText due to error ' + EditorTextSdk.getErrorMessage());
-        return "continue";
-      }
+      var softHyphs = allIndicesOf(_this2.wwTextsRaw[iText], "\xAD");
+      console.log("Removing soft hyphens in component " + iText, "differs: ", _this2.wwTextsRaw[iText] !== _this2.wwTexts[iText], "wwRaw.length", _this2.wwTextsRaw[iText].length, "checked.length", _this2.wwTexts[iText].length, "softHyphs found in wwRaw at: ", softHyphs);
+      softHyphs.forEach(function (i) {
+        if (!EditorTextSdk.replaceText(iText, i, i + 1, "")) {
+          console.warn('Could not remove soft hyphens in text ' + iText + ' for replaceText due to error ' + EditorTextSdk.getErrorMessage());
+        }
+      });
     }
 
     reps.map(function (r) {
@@ -501,9 +513,7 @@ DivvunEditor.prototype.exitAndApply = function () {
   };
 
   for (var iText = 0; iText < texts.length - 1; iText++) {
-    var _ret = _loop(iText);
-
-    if (_ret === "continue") continue;
+    _loop(iText);
   }
 
   this.editorWrapper.remove();
