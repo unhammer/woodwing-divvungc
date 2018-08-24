@@ -303,6 +303,8 @@ function keepKeypresses(elt) {
   });
 }
 
+var WORDSEP = "[ \\n\\t\\r.,\\/#!$%\\^&\\*;:{}=_`~()\\-]";
+
 var DivvunEditor = function DivvunEditor(editorWrapper, mode, wwTextsRaw) {
   var self = this;
   this.editorWrapper = editorWrapper;
@@ -385,14 +387,32 @@ var DivvunEditor = function DivvunEditor(editorWrapper, mode, wwTextsRaw) {
   if (false) {
     this.updateIgnored();
   }
+
   this.wwTextsRaw = wwTextsRaw;
+  this.shymap = this.makeShyMap(wwTextsRaw);
   this.wwTexts = this.stashSoftHyphens(wwTextsRaw);
+
   this.quill.setContents({
     ops: this.wwTexts.map(function (t) {
       return { insert: t + self.wwSep };
     })
   });
   this.check();
+};
+
+DivvunEditor.prototype.makeShyMap = function (textsMut) {
+  var map = {};
+  var wsepRe = new RegExp(WORDSEP + "+");
+  textsMut.slice().forEach(function (t) {
+    t.split(wsepRe).forEach(function (wShy) {
+      var wBold = wShy.replace(/\u00AD/g, "");
+      if (wBold != wShy) {
+        console.log("Adding ", wBold, wShy);
+        map[wBold] = wShy;
+      }
+    });
+  });
+  return map;
 };
 
 DivvunEditor.prototype.stashSoftHyphens = function (textsMut) {
@@ -412,7 +432,11 @@ DivvunEditor.prototype.wwSepsInString = function (str) {
 DivvunEditor.prototype.wwSepsInDelta = function (delta) {
   var self = this;
   return delta.ops.reduce(function (acc, op) {
-    return op.insert ? acc + self.wwSepsInString(op.insert) : acc;
+    if (op.insert && typeof op.insert === "string") {
+      return acc + self.wwSepsInString(op.insert);
+    } else {
+      return acc;
+    }
   }, 0);
 };
 
@@ -458,7 +482,8 @@ var diff2reps = function diff2reps(orig, changed) {
 };
 
 var allIndicesOf = function allIndicesOf(str, char) {
-  for (var a = [], i = str.length; i--;) {
+  var a = [];
+  for (var i = str.length; i--;) {
     if (str[i] === char) {
       a.push(i);
     }
@@ -485,6 +510,7 @@ DivvunEditor.prototype.exitAndApply = function () {
     return;
   }
 
+  var putBackShy = [];
   var textsOff = 0;
 
   var _loop = function _loop(iText) {
@@ -492,23 +518,25 @@ DivvunEditor.prototype.exitAndApply = function () {
     var orig = new Delta({ ops: [{ insert: _this2.wwTexts[iText] + _this2.wwSep }] });
     var changed = _this2.quill.getContents(textsOff, endIncSep);
     var reps = diff2reps(orig, changed);
-
     if (reps.length > 0) {
       var softHyphs = allIndicesOf(_this2.wwTextsRaw[iText], "\xAD");
-      console.log("Removing soft hyphens in component " + iText, "differs: ", _this2.wwTextsRaw[iText] !== _this2.wwTexts[iText], "wwRaw.length", _this2.wwTextsRaw[iText].length, "checked.length", _this2.wwTexts[iText].length, "softHyphs found in wwRaw at: ", softHyphs);
-      softHyphs.forEach(function (i) {
-        if (!EditorTextSdk.replaceText(iText, i, i + 1, "")) {
-          console.warn('Could not remove soft hyphens in text ' + iText + ' for replaceText due to error ' + EditorTextSdk.getErrorMessage());
+      if (softHyphs.length > 0) {
+        putBackShy.push(iText);
+        console.log("Removing soft hyphens in component " + iText, "; Diffs: ", _this2.wwTextsRaw[iText] !== _this2.wwTexts[iText], "wwRaw.length", _this2.wwTextsRaw[iText].length, "checked.length", _this2.wwTexts[iText].length, "softHyphs found in wwRaw at: ", softHyphs);
+        softHyphs.forEach(function (i) {
+          if (!EditorTextSdk.replaceText(iText, i, i + 1, "")) {
+            console.warn('Could not remove soft hyphens in text ' + iText + ' for replaceText due to error ' + EditorTextSdk.getErrorMessage());
+          }
+        });
+      }
+
+      reps.map(function (r) {
+        console.log("In component " + iText + ", replace substring from " + r.beg + " to " + r.end + " with '" + r.rep + "'");
+        if (!EditorTextSdk.replaceText(iText, r.beg, r.end, r.rep)) {
+          console.warn('Could not replaceText due to error ' + EditorTextSdk.getErrorMessage());
         }
       });
     }
-
-    reps.map(function (r) {
-      console.log("In component " + iText + ", replace substring from " + r.beg + " to " + r.end + " with '" + r.rep + "'");
-      if (!EditorTextSdk.replaceText(iText, r.beg, r.end, r.rep)) {
-        console.warn('Could not replaceText due to error ' + EditorTextSdk.getErrorMessage());
-      }
-    });
     textsOff += endIncSep;
   };
 
@@ -516,10 +544,48 @@ DivvunEditor.prototype.exitAndApply = function () {
     _loop(iText);
   }
 
+  var wwTextsNoShy = EditorTextSdk.getTexts(),
+      shymap = this.shymap;
+  putBackShy.forEach(function (iText) {
+    indicesOfWords(wwTextsNoShy[iText]).forEach(function (i) {
+      var beg = i[0],
+          end = i[1],
+          wNoShy = wwTextsNoShy[iText].substring(beg, end);
+      if (shymap && shymap.hasOwnProperty(wNoShy)) {
+        var wShy = shymap[wNoShy];
+
+        if (!EditorTextSdk.replaceText(iText, beg, end, wShy)) {
+          console.warn('Could not replaceText (putBackShy) due to error ' + EditorTextSdk.getErrorMessage());
+        }
+      }
+    });
+  });
+
   this.editorWrapper.remove();
   if (!EditorTextSdk.closeTransaction()) {
     alert("Failed to close transaction, WoodWing says: " + EditorTextSdk.getErrorMessage());
   }
+};
+
+var indicesOfWords = function indicesOfWords(str) {
+  var wsepRe = new RegExp(WORDSEP + "+\|$", "g");
+  var words = [];
+  var match;
+  var last = 0;
+  var sanity = 5000;
+  while ((match = wsepRe.exec(str)) !== null) {
+    if (last < match.index) {
+      words.unshift([last, match.index]);
+    }
+    last = wsepRe.lastIndex;
+    if (match[0].length === 0) {
+      break;
+    }
+    if (--sanity <= 0) {
+      break;
+    }
+  }
+  return words;
 };
 
 DivvunEditor.prototype.getModes = function () {

@@ -2,7 +2,8 @@
 
 declare function QuillModule(any:any): void;
 
-type ops = Array<{retain:number}|{insert:string|{}}|{delete:number}>;
+type op = {retain:number}|{insert:string|{}}|{delete:number};
+type ops = Array<op>;
 declare class Delta {
   ops: ops;
   diff(d: Delta): Delta;

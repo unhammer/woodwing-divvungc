@@ -333,6 +333,10 @@ function keepKeypresses(elt/*:HTMLElement*/) {
                        });
 }
 
+// Double-escaping necessary at least for dash (to avoid it becoming a
+// range, when we send it through RegExp)
+const WORDSEP = "[ \\n\\t\\r.,\\/#!$%\\^&\\*;:{}=_`~()\\-]";
+
 var DivvunEditor = function(editorWrapper/*:HTMLElement*/, mode/*:string*/, wwTextsRaw/*:Array<string>*/)/*:void*/ {
   let self = this;
   this.editorWrapper = editorWrapper;
@@ -423,22 +427,37 @@ var DivvunEditor = function(editorWrapper/*:HTMLElement*/, mode/*:string*/, wwTe
   if(false) {                   // ignores TODO
     this.updateIgnored();
   }
-  this.wwTextsRaw = wwTextsRaw;                     // "const", don't change this elsewhere
-  this.wwTexts = this.stashSoftHyphens(wwTextsRaw); // "const", don't change this elsewhere
+
+  // These are "const", don't change them elsewhere:
+  this.wwTextsRaw = wwTextsRaw;
+  this.shymap = this.makeShyMap(wwTextsRaw);
+  this.wwTexts = this.stashSoftHyphens(wwTextsRaw);
+
   this.quill.setContents({
     ops: this.wwTexts.map(function(t){ return { insert: t + self.wwSep }; })
   });
   this.check();
 };
 
+DivvunEditor.prototype.makeShyMap = function(textsMut/*:Array<string>*/)/*:{ [string]: string }*/ {
+  let map = {};
+  let wsepRe = new RegExp(WORDSEP+"+");
+  textsMut.slice().forEach(function(t){
+    t.split(wsepRe).forEach(function(wShy) {
+      let wBold = wShy.replace(/\u00AD/g, "");
+      if(wBold != wShy) {
+        console.log("Adding ", wBold, wShy);
+        map[wBold] = wShy;
+      }
+    });
+  });
+  return map;
+};
+
 DivvunEditor.prototype.stashSoftHyphens = function(textsMut/*:Array<string>*/) {
   let texts = textsMut.slice();      // avoid stupid mutability
-  // if(!this.withSoftHyphen) {
-  //   this.withSoftHyphen = {};
-  // }
   for(let i = 0; i < texts.length; i++) {
     // let words = texts[i].split(/[ \n\t\r.,\/#!$%\^&\*;:{}=\-_`~()]+/);
-    // TODO: withSoftHyphen[word.replace(shy,"")]=word
     texts[i] = texts[i].replace(/\u00AD/g, "");
   }
   return texts;
@@ -452,8 +471,13 @@ DivvunEditor.prototype.wwSepsInString = function(str/*:string*/) {
 };
 DivvunEditor.prototype.wwSepsInDelta = function(delta) {
   let self = this;
-  return delta.ops.reduce(function(acc, op) {
-    return op.insert ? (acc + self.wwSepsInString(op.insert)) : acc;
+  return delta.ops.reduce(function(acc/*:number*/, op/*:op*/) {
+    if(op.insert && typeof op.insert === "string") { // embeds are non-string inserts
+      return acc + self.wwSepsInString(op.insert);
+    }
+    else {
+      return acc;
+    }
   }, 0);
 };
 
@@ -495,9 +519,13 @@ var diff2reps = function (orig/*:Delta*/, changed/*:Delta*/)/*:Array<{ beg: numb
   return reps;
 };
 
-// In reverse order, importantly
-var allIndicesOf = function(str, char) {
-  for (var a=[],i=str.length; i--;) {
+/*
+ * Give all indices of a single char in str, in _reverse_ order of
+ * occurrence.
+ */
+var allIndicesOf = function(str/*:string*/, char/*:string*/)/*:Array<number>*/ {
+  var a = [];
+  for (var i = str.length; i--;) {
     if (str[i]===char)
     {
       a.push(i);
@@ -524,40 +552,90 @@ DivvunEditor.prototype.exitAndApply = function()/*: void*/ {
     return;
   }
 
-
+  var putBackShy = [];
   var textsOff = 0;
   for (let iText = 0; iText < texts.length - 1; iText++) {
     let endIncSep = texts[iText].length + this.wwSep.length;
     let orig = new Delta({ ops: [{ insert: this.wwTexts[iText] + this.wwSep }]});
     let changed = this.quill.getContents(textsOff, endIncSep);
     let reps = diff2reps(orig, changed);
-    // First, remove soft hyphens in the component we're replacing in,
-    // so we're sure indices line up:
     if(reps.length > 0) {
-      // Only replaceText at the exact indices that have soft hyphens, otherwise we mess up styling:
+      // First, remove soft hyphens in the component we're replacing
+      // in, so we're sure indices line up. We only replaceText at the
+      // exact indices that have soft hyphens, otherwise we mess up
+      // styling:
       let softHyphs = allIndicesOf(this.wwTextsRaw[iText], "\xAD");
-      console.log("Removing soft hyphens in component " + iText, "differs: ", this.wwTextsRaw[iText] !== this.wwTexts[iText], "wwRaw.length", this.wwTextsRaw[iText].length, "checked.length", this.wwTexts[iText].length, "softHyphs found in wwRaw at: ", softHyphs);
-      softHyphs.forEach(function(i) {
-        if (!EditorTextSdk.replaceText(iText, i, i+1, "")) {
-          console.warn('Could not remove soft hyphens in text ' + iText + ' for replaceText due to error ' + EditorTextSdk.getErrorMessage());
+      if(softHyphs.length > 0) {
+        putBackShy.push(iText);
+        console.log("Removing soft hyphens in component " + iText, "; Diffs: ", this.wwTextsRaw[iText] !== this.wwTexts[iText], "wwRaw.length", this.wwTextsRaw[iText].length, "checked.length", this.wwTexts[iText].length, "softHyphs found in wwRaw at: ", softHyphs);
+        softHyphs.forEach(function(i) {
+          if (!EditorTextSdk.replaceText(iText, i, i+1, "")) {
+            console.warn('Could not remove soft hyphens in text ' + iText + ' for replaceText due to error ' + EditorTextSdk.getErrorMessage());
+          }
+        });
+      }
+      // Now perform the actual replacements:
+      reps.map(function(r) {
+        console.log("In component " + iText + ", replace substring from " + r.beg + " to " + r.end + " with '" + r.rep + "'");
+        if (!EditorTextSdk.replaceText(iText, r.beg, r.end, r.rep)) {
+          console.warn('Could not replaceText due to error ' + EditorTextSdk.getErrorMessage());
         }
       });
     }
-    // Now perform the actual replacements:
-    reps.map(function(r) {
-      console.log("In component " + iText + ", replace substring from " + r.beg + " to " + r.end + " with '" + r.rep + "'");
-      if (!EditorTextSdk.replaceText(iText, r.beg, r.end, r.rep)) {
-        console.warn('Could not replaceText due to error ' + EditorTextSdk.getErrorMessage());
-      }
-    });
     textsOff += endIncSep;
   }
+
+  // Now get the current state of the editor, and replace
+  // words-without-shy with words-with-shy, but only for the texts
+  // that we actually had replacements in:
+  let wwTextsNoShy = EditorTextSdk.getTexts(),
+      shymap = this.shymap;
+  putBackShy.forEach(function(iText){
+    indicesOfWords(wwTextsNoShy[iText]).forEach(function(i) {
+      let beg = i[0],
+          end = i[1],
+          wNoShy = wwTextsNoShy[iText].substring(beg, end);
+      if(shymap && shymap.hasOwnProperty(wNoShy)) {
+        let wShy = shymap[wNoShy];
+        // console.log("Putting back soft hyphens for word", wNoShy, "at", beg, end, " → ", wShy);
+        if (!EditorTextSdk.replaceText(iText, beg, end, wShy)) {
+          console.warn('Could not replaceText (putBackShy) due to error ' + EditorTextSdk.getErrorMessage());
+        }
+      }
+    });
+  });
 
   this.editorWrapper.remove();
   if(!EditorTextSdk.closeTransaction()) {
     alert("Failed to close transaction, WoodWing says: " + EditorTextSdk.getErrorMessage());
   }
 };
+
+/*
+ * Give start/end indices of each word, as split by WORDSEP, in
+ * _reverse_ order of occurrence in str.
+ */
+var indicesOfWords = function (str/*:string*/)/*:Array<[number, number]>*/ {
+  let wsepRe = new RegExp(WORDSEP+"+\|$", "g"); // NB: Keep "g", or exec won't advance
+  var words = [];
+  var match;
+  var last = 0;
+  var sanity = 5000;
+  while((match = wsepRe.exec(str)) !== null) {
+    if(last < match.index) {    // skip space at beginning of string
+      words.unshift([last, match.index]);
+    }
+    last = wsepRe.lastIndex;
+    if(match[0].length === 0) { // end of string, /$/ matched
+      break;
+    }
+    if((--sanity) <= 0) {
+      break;
+    }
+  }
+  return words;
+};
+
 
 DivvunEditor.prototype.getModes = function()/*: void*/ {
   let self = this;
