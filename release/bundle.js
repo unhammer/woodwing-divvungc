@@ -305,9 +305,10 @@ function keepKeypresses(elt) {
 
 var WORDSEP = "[ \\n\\t\\r.,\\/#!$%\\^&\\*;:{}=_`~()\\-]";
 
-var DivvunEditor = function DivvunEditor(editorWrapper, mode, wwTextsRaw) {
+var DivvunEditor = function DivvunEditor(editorWrapper, mode, wwTextsRaw, wwEditor) {
   var self = this;
   this.editorWrapper = editorWrapper;
+  this.wwEditor = wwEditor;
   keepKeypresses(editorWrapper);
   var repmenu = $('<div id="divvun-repmenu" style="display:none" role="listbox"><div style="left: 0px;" id="divvun-repmenu_co" role="presentation"><table id="divvun-repmenu_tbl" role="presentation" cellspacing="0" border="0" cellpadding="0"></table></div></div>');
   var editorDiv = $('<div spellcheck="false">');
@@ -442,8 +443,8 @@ DivvunEditor.prototype.wwSepsInDelta = function (delta) {
 
 DivvunEditor.prototype.cancel = function () {
   this.editorWrapper.remove();
-  if (!EditorTextSdk.cancelTransaction()) {
-    alert("Failed to cancel transaction, WoodWing says: " + EditorTextSdk.getErrorMessage());
+  if (!this.wwEditor.cancelTransaction()) {
+    alert("Failed to cancel transaction, WoodWing says: " + this.wwEditor.getErrorMessage());
   }
 };
 
@@ -494,6 +495,7 @@ var allIndicesOf = function allIndicesOf(str, char) {
 DivvunEditor.prototype.exitAndApply = function () {
   var _this2 = this;
 
+  var wwEditor = this.wwEditor;
   var texts = this.getFText().split(this.wwSep);
 
   if (texts[texts.length - 1] !== "") {
@@ -524,16 +526,16 @@ DivvunEditor.prototype.exitAndApply = function () {
         putBackShy.push(iText);
         console.log("Removing soft hyphens in component " + iText, "; Diffs: ", _this2.wwTextsRaw[iText] !== _this2.wwTexts[iText], "wwRaw.length", _this2.wwTextsRaw[iText].length, "checked.length", _this2.wwTexts[iText].length, "softHyphs found in wwRaw at: ", softHyphs);
         softHyphs.forEach(function (i) {
-          if (!EditorTextSdk.replaceText(iText, i, i + 1, "")) {
-            console.warn('Could not remove soft hyphens in text ' + iText + ' for replaceText due to error ' + EditorTextSdk.getErrorMessage());
+          if (!wwEditor.replaceText(iText, i, i + 1, "")) {
+            console.warn('Could not remove soft hyphens in text ' + iText + ' for replaceText due to error ' + wwEditor.getErrorMessage());
           }
         });
       }
 
       reps.map(function (r) {
-        console.log("In component " + iText + ", replace substring from " + r.beg + " to " + r.end + " with '" + r.rep + "'");
-        if (!EditorTextSdk.replaceText(iText, r.beg, r.end, r.rep)) {
-          console.warn('Could not replaceText due to error ' + EditorTextSdk.getErrorMessage());
+        console.log("In component " + iText + ", replace substring from " + r.beg + " to " + r.end + " with '" + r.rep + "'" + " – with wwEditor", wwEditor);
+        if (!wwEditor.replaceText(iText, r.beg, r.end, r.rep)) {
+          console.warn('Could not replaceText due to error ' + wwEditor.getErrorMessage());
         }
       });
     }
@@ -544,7 +546,7 @@ DivvunEditor.prototype.exitAndApply = function () {
     _loop(iText);
   }
 
-  var wwTextsNoShy = EditorTextSdk.getTexts(),
+  var wwTextsNoShy = wwEditor.getTexts(),
       shymap = this.shymap;
   putBackShy.forEach(function (iText) {
     indicesOfWords(wwTextsNoShy[iText]).forEach(function (i) {
@@ -554,16 +556,16 @@ DivvunEditor.prototype.exitAndApply = function () {
       if (shymap && shymap.hasOwnProperty(wNoShy)) {
         var wShy = shymap[wNoShy];
 
-        if (!EditorTextSdk.replaceText(iText, beg, end, wShy)) {
-          console.warn('Could not replaceText (putBackShy) due to error ' + EditorTextSdk.getErrorMessage());
+        if (!wwEditor.replaceText(iText, beg, end, wShy)) {
+          console.warn('Could not replaceText (putBackShy) due to error ' + wwEditor.getErrorMessage());
         }
       }
     });
   });
 
   this.editorWrapper.remove();
-  if (!EditorTextSdk.closeTransaction()) {
-    alert("Failed to close transaction, WoodWing says: " + EditorTextSdk.getErrorMessage());
+  if (!wwEditor.closeTransaction()) {
+    alert("Failed to close transaction, WoodWing says: " + wwEditor.getErrorMessage());
   }
 };
 
@@ -957,16 +959,16 @@ var overrideWwSpellcheck = function overrideWwSpellcheck() {
   $(".writr").attr("spellcheck", "false");
 };
 
-var mkQuill = function mkQuill() {
+var mkQuill = function mkQuill(wwEditor) {
   $('#divvun-editor').remove();
-  if (!EditorTextSdk.canEditArticle()) {
+  if (!wwEditor.canEditArticle()) {
     alert("WoodWing says we can't edit the article.");
   }
-  if (!EditorTextSdk.startTransaction()) {
-    alert("Failed to start transaction, WoodWing says: " + EditorTextSdk.getErrorMessage());
+  if (!wwEditor.startTransaction()) {
+    alert("Failed to start transaction, WoodWing says: " + wwEditor.getErrorMessage());
 
-    if (!EditorTextSdk.cancelTransaction()) {
-      alert("Failed to cancel transaction, WoodWing says: " + EditorTextSdk.getErrorMessage());
+    if (!wwEditor.cancelTransaction()) {
+      alert("Failed to cancel transaction, WoodWing says: " + wwEditor.getErrorMessage());
     }
     return;
   }
@@ -974,8 +976,8 @@ var mkQuill = function mkQuill() {
   $(window.document.body).append(editorWrapper);
 
   var mode = "sme|sme_spell";
-  var wwTexts = EditorTextSdk.getTexts();
-  var editor = new DivvunEditor(editorWrapper.get()[0], mode, wwTexts);
+  var wwTexts = wwEditor.getTexts();
+  var _divvuneditor = new DivvunEditor(editorWrapper.get()[0], mode, wwTexts, wwEditor);
   overrideWwSpellcheck();
 };
 
@@ -992,12 +994,28 @@ var init = function init() {
   initCss(PLUGINDIR + "quill.snow.css");
   initCss(PLUGINDIR + "style.css?2");
   initL10n("sme", PLUGINDIR);
-  var subMenuId = EditorUiSdk.createAction({
-    label: 'Divvun',
-    icon: PLUGINDIR + "divvun.ico",
-    click: mkQuill
-  });
   window.setTimeout(overrideWwSpellcheck, 3000);
+  if (typeof DigitalEditorSdk !== 'undefined') {
+    DigitalEditorSdk.onOpenArticle(function (article) {
+      console.log('Digital Article opened', article);
+      DigitalEditorSdk.addToolbarButton({
+        label: 'Divvun',
+        onAction: function onAction() {
+          mkQuill(article.getEditor());
+        }
+      });
+    });
+  } else if (typeof EditorTextSdk !== 'undefined') {
+    var _subMenuId = EditorUiSdk.createAction({
+      label: 'Divvun',
+      icon: PLUGINDIR + "divvun.ico",
+      click: function click() {
+        mkQuill(EditorTextSdk);
+      }
+    });
+  } else {
+    console.warn("Couldn't find DigitalEditorSdk nor EditorTextSdk – giving up");
+  }
 };
 
 init();
