@@ -24,6 +24,8 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
+console.log("DIVVUN0");
+
 var debug = window.location.protocol === "file:";
 var log = debug ? console.log.bind(window.console) : function (_ignore) {};
 
@@ -305,9 +307,10 @@ function keepKeypresses(elt) {
 
 var WORDSEP = "[ \\n\\t\\r.,\\/#!$%\\^&\\*;:{}=_`~()\\-]";
 
-var DivvunEditor = function DivvunEditor(editorWrapper, mode, wwTextsRaw) {
+var DivvunEditor = function DivvunEditor(editorWrapper, mode, wwTextsRaw, wwEditor) {
   var self = this;
   this.editorWrapper = editorWrapper;
+  this.wwEditor = wwEditor;
   keepKeypresses(editorWrapper);
   var repmenu = $('<div id="divvun-repmenu" style="display:none" role="listbox"><div style="left: 0px;" id="divvun-repmenu_co" role="presentation"><table id="divvun-repmenu_tbl" role="presentation" cellspacing="0" border="0" cellpadding="0"></table></div></div>');
   var editorDiv = $('<div spellcheck="false">');
@@ -442,8 +445,8 @@ DivvunEditor.prototype.wwSepsInDelta = function (delta) {
 
 DivvunEditor.prototype.cancel = function () {
   this.editorWrapper.remove();
-  if (!EditorTextSdk.cancelTransaction()) {
-    alert("Failed to cancel transaction, WoodWing says: " + EditorTextSdk.getErrorMessage());
+  if (!this.wwEditor.cancelTransaction()) {
+    alert("Failed to cancel transaction, WoodWing says: " + this.wwEditor.getErrorMessage());
   }
 };
 
@@ -524,16 +527,16 @@ DivvunEditor.prototype.exitAndApply = function () {
         putBackShy.push(iText);
         console.log("Removing soft hyphens in component " + iText, "; Diffs: ", _this2.wwTextsRaw[iText] !== _this2.wwTexts[iText], "wwRaw.length", _this2.wwTextsRaw[iText].length, "checked.length", _this2.wwTexts[iText].length, "softHyphs found in wwRaw at: ", softHyphs);
         softHyphs.forEach(function (i) {
-          if (!EditorTextSdk.replaceText(iText, i, i + 1, "")) {
-            console.warn('Could not remove soft hyphens in text ' + iText + ' for replaceText due to error ' + EditorTextSdk.getErrorMessage());
+          if (!this.wwEditor.replaceText(iText, i, i + 1, "")) {
+            console.warn('Could not remove soft hyphens in text ' + iText + ' for replaceText due to error ' + this.wwEditor.getErrorMessage());
           }
         });
       }
 
       reps.map(function (r) {
         console.log("In component " + iText + ", replace substring from " + r.beg + " to " + r.end + " with '" + r.rep + "'");
-        if (!EditorTextSdk.replaceText(iText, r.beg, r.end, r.rep)) {
-          console.warn('Could not replaceText due to error ' + EditorTextSdk.getErrorMessage());
+        if (!this.wwEditor.replaceText(iText, r.beg, r.end, r.rep)) {
+          console.warn('Could not replaceText due to error ' + this.wwEditor.getErrorMessage());
         }
       });
     }
@@ -544,7 +547,7 @@ DivvunEditor.prototype.exitAndApply = function () {
     _loop(iText);
   }
 
-  var wwTextsNoShy = EditorTextSdk.getTexts(),
+  var wwTextsNoShy = this.wwEditor.getTexts(),
       shymap = this.shymap;
   putBackShy.forEach(function (iText) {
     indicesOfWords(wwTextsNoShy[iText]).forEach(function (i) {
@@ -554,16 +557,16 @@ DivvunEditor.prototype.exitAndApply = function () {
       if (shymap && shymap.hasOwnProperty(wNoShy)) {
         var wShy = shymap[wNoShy];
 
-        if (!EditorTextSdk.replaceText(iText, beg, end, wShy)) {
-          console.warn('Could not replaceText (putBackShy) due to error ' + EditorTextSdk.getErrorMessage());
+        if (!this.wwEditor.replaceText(iText, beg, end, wShy)) {
+          console.warn('Could not replaceText (putBackShy) due to error ' + this.wwEditor.getErrorMessage());
         }
       }
     });
   });
 
   this.editorWrapper.remove();
-  if (!EditorTextSdk.closeTransaction()) {
-    alert("Failed to close transaction, WoodWing says: " + EditorTextSdk.getErrorMessage());
+  if (!this.wwEditor.closeTransaction()) {
+    alert("Failed to close transaction, WoodWing says: " + this.wwEditor.getErrorMessage());
   }
 };
 
@@ -975,7 +978,7 @@ var mkQuill = function mkQuill(wwEditor) {
 
   var mode = "sme|sme_spell";
   var wwTexts = wwEditor.getTexts();
-  var _divvuneditor = new DivvunEditor(editorWrapper.get()[0], mode, wwTexts);
+  var _divvuneditor = new DivvunEditor(editorWrapper.get()[0], mode, wwTexts, wwEditor);
   overrideWwSpellcheck();
 };
 
