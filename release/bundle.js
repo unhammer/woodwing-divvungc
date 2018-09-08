@@ -988,25 +988,34 @@ var initCss = function initCss(file) {
   $('head').append(el);
 };
 
+var MODE = 'DigitalEditorSdk';
+
 var init = function init() {
   initCss(PLUGINDIR + "quill.snow.css");
   initCss(PLUGINDIR + "style.css?2");
   initL10n("sme", PLUGINDIR);
-  var subMenuId = EditorUiSdk.createAction({
-    label: 'Divvun',
-    icon: PLUGINDIR + "divvun.ico",
-    click: mkQuill
-  });
+  if (MODE === 'DigitalEditorSdk') {
+    DigitalEditorSdk.onOpenArticle(function (article) {
+      console.log('Digital Article opened', article);
+      DigitalEditorSdk.addToolbarButton({
+        label: 'Divvun',
+        onAction: function onAction() {
+          mkQuill(article.getEditor());
+        }
+      });
+    });
+  } else {
+    var subMenuId = EditorUiSdk.createAction({
+      label: 'Divvun',
+      icon: PLUGINDIR + "divvun.ico",
+      click: function click() {
+        mkQuill(EditorTextSdk);
+      }
+    });
+  }
   window.setTimeout(overrideWwSpellcheck, 3000);
 };
 
 init();
-
-DigitalEditorSdk.onOpenArticle(function (article) {
-  console.log('Digital Article opened', article);
-  textEditor = article.getEditor();
-  createSampleMenu();
-  createTransactionMenu();
-});
 //# sourceMappingURL=woodwing-divvungc.js.map
 }());

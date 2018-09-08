@@ -13,25 +13,7 @@ type EditorTextSdkType = {
    selectText(text: number, startPos: number, endPos: number): void;
 }
 
-// declare class EditorTextSdk {
-//   static getTexts(): Array<string>;
-//   static replaceText(text: number, startOffset: number, endOffset: number, replacement: string): void;
-//   static isTextSelected(): bool;
-//   static canEditArticle(): bool;
-//   static getErrorMessage(): string;
-//   static startTransaction(): bool;
-//   static closeTransaction(): bool;
-//   static cancelTransaction(): bool;
-//   static isInTransaction(): bool;
-//   // Are the following available in print editor, or just digital?
-//   static canEditArticle(): bool;
-//   static selectText(text: number, startPos: number, endPos: number): void;
-// }
-
 declare var EditorTextSdk: EditorTextSdkType;
-// declare module 'EditorTextSdk' {
-//   declare var exports: Class<EditorTextSdk>;
-// }
 
 declare class EditorUiSdk {
   static createAction({ label: string, icon: string, click: Function }): string;
@@ -47,7 +29,7 @@ declare class Article {
 
 declare class DigitalEditorSdk {
   static onOpenArticle(( article: Article ) => any): void;
-  static addToolbarButton({ label: string, onAction: Function }): void;
+  static addToolbarButton({ label: string, onAction?: (button:any)=>void, onInit?: (button:any)=>void }): void;
 }
 
 declare module 'DigitalEditorSdk' {

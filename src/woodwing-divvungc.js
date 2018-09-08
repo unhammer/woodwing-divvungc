@@ -1110,25 +1110,31 @@ var initCss = function(file) {
   $('head').append(el);
 };
 
+// TODO: Can we detect this?
+var MODE = 'DigitalEditorSdk';
+
 /* Should only run once */
 var init = function() {
   initCss(PLUGINDIR + "quill.snow.css");
   initCss(PLUGINDIR + "style.css?2");
   initL10n("sme", PLUGINDIR);              // TODO: hardcodedlang
-  var subMenuId = EditorUiSdk.createAction({
-    label: 'Divvun',
-    icon: PLUGINDIR + "divvun.ico",
-    click: mkQuill
-  });
+  if(MODE === 'DigitalEditorSdk') {
+    DigitalEditorSdk.onOpenArticle(function( article ) {
+      console.log('Digital Article opened', article);
+      DigitalEditorSdk.addToolbarButton({
+        label: 'Divvun',
+        onAction: function() { mkQuill(article.getEditor()); }
+      });
+    });
+  }
+  else {
+    var subMenuId = EditorUiSdk.createAction({
+      label: 'Divvun',
+      icon: PLUGINDIR + "divvun.ico",
+      click: function() { mkQuill(EditorTextSdk); }
+    });
+  }
   window.setTimeout(overrideWwSpellcheck, 3000);
 };
 
 init();
-
-// TODO wip:
-DigitalEditorSdk.onOpenArticle(function( article ) {
-  console.log('Digital Article opened', article);
-  textEditor = article.getEditor();
-  createSampleMenu();
-  createTransactionMenu();
-});
