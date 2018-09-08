@@ -1,5 +1,5 @@
 // @flow -*- indent-tabs-mode: nil; tab-width: 2; js2-basic-offset: 2; coding: utf-8; compile-command: "cd .. && make -j" -*-
-/* global $, Quill, history, console, repl, external, EditorUiSdk, EditorTextSdk */
+/* global $, Quill, history, console, repl, external, EditorUiSdk, EditorTextSdk, DigitalEditorSdk, btoa */
 
 "use strict";
 
@@ -538,6 +538,7 @@ var allIndicesOf = function(str/*:string*/, char/*:string*/)/*:Array<number>*/ {
 };
 
 DivvunEditor.prototype.exitAndApply = function()/*: void*/ {
+  let wwEditor = this.wwEditor;
   let texts = this.getFText().split(this.wwSep);
 
   if(texts[texts.length - 1] !== "") {
@@ -572,16 +573,16 @@ DivvunEditor.prototype.exitAndApply = function()/*: void*/ {
         putBackShy.push(iText);
         console.log("Removing soft hyphens in component " + iText, "; Diffs: ", this.wwTextsRaw[iText] !== this.wwTexts[iText], "wwRaw.length", this.wwTextsRaw[iText].length, "checked.length", this.wwTexts[iText].length, "softHyphs found in wwRaw at: ", softHyphs);
         softHyphs.forEach(function(i) {
-          if (!this.wwEditor.replaceText(iText, i, i+1, "")) {
-            console.warn('Could not remove soft hyphens in text ' + iText + ' for replaceText due to error ' + this.wwEditor.getErrorMessage());
+          if (!wwEditor.replaceText(iText, i, i+1, "")) {
+            console.warn('Could not remove soft hyphens in text ' + iText + ' for replaceText due to error ' + wwEditor.getErrorMessage());
           }
         });
       }
       // Now perform the actual replacements:
       reps.map(function(r) {
-        console.log("In component " + iText + ", replace substring from " + r.beg + " to " + r.end + " with '" + r.rep + "'");
-        if (!this.wwEditor.replaceText(iText, r.beg, r.end, r.rep)) {
-          console.warn('Could not replaceText due to error ' + this.wwEditor.getErrorMessage());
+        console.log("In component " + iText + ", replace substring from " + r.beg + " to " + r.end + " with '" + r.rep + "'" + " – with wwEditor", wwEditor);
+        if (!wwEditor.replaceText(iText, r.beg, r.end, r.rep)) {
+          console.warn('Could not replaceText due to error ' + wwEditor.getErrorMessage());
         }
       });
     }
@@ -591,7 +592,7 @@ DivvunEditor.prototype.exitAndApply = function()/*: void*/ {
   // Now get the current state of the editor, and replace
   // words-without-shy with words-with-shy, but only for the texts
   // that we actually had replacements in:
-  let wwTextsNoShy = this.wwEditor.getTexts(),
+  let wwTextsNoShy = wwEditor.getTexts(),
       shymap = this.shymap;
   putBackShy.forEach(function(iText){
     indicesOfWords(wwTextsNoShy[iText]).forEach(function(i) {
@@ -601,16 +602,16 @@ DivvunEditor.prototype.exitAndApply = function()/*: void*/ {
       if(shymap && shymap.hasOwnProperty(wNoShy)) {
         let wShy = shymap[wNoShy];
         // console.log("Putting back soft hyphens for word", wNoShy, "at", beg, end, " → ", wShy);
-        if (!this.wwEditor.replaceText(iText, beg, end, wShy)) {
-          console.warn('Could not replaceText (putBackShy) due to error ' + this.wwEditor.getErrorMessage());
+        if (!wwEditor.replaceText(iText, beg, end, wShy)) {
+          console.warn('Could not replaceText (putBackShy) due to error ' + wwEditor.getErrorMessage());
         }
       }
     });
   });
 
   this.editorWrapper.remove();
-  if(!this.wwEditor.closeTransaction()) {
-    alert("Failed to close transaction, WoodWing says: " + this.wwEditor.getErrorMessage());
+  if(!wwEditor.closeTransaction()) {
+    alert("Failed to close transaction, WoodWing says: " + wwEditor.getErrorMessage());
   }
 };
 
@@ -1077,6 +1078,7 @@ let overrideWwSpellcheck = function() {
   // spellcheck after our init runs, thus doing it from mkQuill and
   // timer
   $(".writr").attr("spellcheck", "false");
+  // TODO: Doesn't work in DigitalEditor/Multichannel
 };
 
 /* Should check if it's been run so we don't get a bunch of editors */
@@ -1113,15 +1115,13 @@ var initCss = function(file) {
   $('head').append(el);
 };
 
-// TODO: Can we detect this?
-var MODE = 'DigitalEditorSdk';
-
 /* Should only run once */
 var init = function() {
   initCss(PLUGINDIR + "quill.snow.css");
   initCss(PLUGINDIR + "style.css?2");
   initL10n("sme", PLUGINDIR);              // TODO: hardcodedlang
-  if(MODE === 'DigitalEditorSdk') {
+  window.setTimeout(overrideWwSpellcheck, 3000);
+  if(DigitalEditorSdk !== undefined) {
     DigitalEditorSdk.onOpenArticle(function( article ) {
       console.log('Digital Article opened', article);
       DigitalEditorSdk.addToolbarButton({
@@ -1130,14 +1130,16 @@ var init = function() {
       });
     });
   }
-  else {
-    var subMenuId = EditorUiSdk.createAction({
+  else if(EditorTextSdk !== undefined) {
+    var _subMenuId = EditorUiSdk.createAction({
       label: 'Divvun',
       icon: PLUGINDIR + "divvun.ico",
       click: function() { mkQuill(EditorTextSdk); }
     });
   }
-  window.setTimeout(overrideWwSpellcheck, 3000);
+  else {
+    console.warn("Couldn't find DigitalEditorSdk nor EditorTextSdk – giving up");
+  }
 };
 
 init();

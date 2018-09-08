@@ -497,6 +497,7 @@ var allIndicesOf = function allIndicesOf(str, char) {
 DivvunEditor.prototype.exitAndApply = function () {
   var _this2 = this;
 
+  var wwEditor = this.wwEditor;
   var texts = this.getFText().split(this.wwSep);
 
   if (texts[texts.length - 1] !== "") {
@@ -527,16 +528,16 @@ DivvunEditor.prototype.exitAndApply = function () {
         putBackShy.push(iText);
         console.log("Removing soft hyphens in component " + iText, "; Diffs: ", _this2.wwTextsRaw[iText] !== _this2.wwTexts[iText], "wwRaw.length", _this2.wwTextsRaw[iText].length, "checked.length", _this2.wwTexts[iText].length, "softHyphs found in wwRaw at: ", softHyphs);
         softHyphs.forEach(function (i) {
-          if (!this.wwEditor.replaceText(iText, i, i + 1, "")) {
-            console.warn('Could not remove soft hyphens in text ' + iText + ' for replaceText due to error ' + this.wwEditor.getErrorMessage());
+          if (!wwEditor.replaceText(iText, i, i + 1, "")) {
+            console.warn('Could not remove soft hyphens in text ' + iText + ' for replaceText due to error ' + wwEditor.getErrorMessage());
           }
         });
       }
 
       reps.map(function (r) {
-        console.log("In component " + iText + ", replace substring from " + r.beg + " to " + r.end + " with '" + r.rep + "'");
-        if (!this.wwEditor.replaceText(iText, r.beg, r.end, r.rep)) {
-          console.warn('Could not replaceText due to error ' + this.wwEditor.getErrorMessage());
+        console.log("In component " + iText + ", replace substring from " + r.beg + " to " + r.end + " with '" + r.rep + "'" + " – with wwEditor", wwEditor);
+        if (!wwEditor.replaceText(iText, r.beg, r.end, r.rep)) {
+          console.warn('Could not replaceText due to error ' + wwEditor.getErrorMessage());
         }
       });
     }
@@ -547,7 +548,7 @@ DivvunEditor.prototype.exitAndApply = function () {
     _loop(iText);
   }
 
-  var wwTextsNoShy = this.wwEditor.getTexts(),
+  var wwTextsNoShy = wwEditor.getTexts(),
       shymap = this.shymap;
   putBackShy.forEach(function (iText) {
     indicesOfWords(wwTextsNoShy[iText]).forEach(function (i) {
@@ -557,16 +558,16 @@ DivvunEditor.prototype.exitAndApply = function () {
       if (shymap && shymap.hasOwnProperty(wNoShy)) {
         var wShy = shymap[wNoShy];
 
-        if (!this.wwEditor.replaceText(iText, beg, end, wShy)) {
-          console.warn('Could not replaceText (putBackShy) due to error ' + this.wwEditor.getErrorMessage());
+        if (!wwEditor.replaceText(iText, beg, end, wShy)) {
+          console.warn('Could not replaceText (putBackShy) due to error ' + wwEditor.getErrorMessage());
         }
       }
     });
   });
 
   this.editorWrapper.remove();
-  if (!this.wwEditor.closeTransaction()) {
-    alert("Failed to close transaction, WoodWing says: " + this.wwEditor.getErrorMessage());
+  if (!wwEditor.closeTransaction()) {
+    alert("Failed to close transaction, WoodWing says: " + wwEditor.getErrorMessage());
   }
 };
 
@@ -991,13 +992,12 @@ var initCss = function initCss(file) {
   $('head').append(el);
 };
 
-var MODE = 'DigitalEditorSdk';
-
 var init = function init() {
   initCss(PLUGINDIR + "quill.snow.css");
   initCss(PLUGINDIR + "style.css?2");
   initL10n("sme", PLUGINDIR);
-  if (MODE === 'DigitalEditorSdk') {
+  window.setTimeout(overrideWwSpellcheck, 3000);
+  if (DigitalEditorSdk !== undefined) {
     DigitalEditorSdk.onOpenArticle(function (article) {
       console.log('Digital Article opened', article);
       DigitalEditorSdk.addToolbarButton({
@@ -1007,16 +1007,17 @@ var init = function init() {
         }
       });
     });
-  } else {
-    var subMenuId = EditorUiSdk.createAction({
+  } else if (EditorTextSdk !== undefined) {
+    var _subMenuId = EditorUiSdk.createAction({
       label: 'Divvun',
       icon: PLUGINDIR + "divvun.ico",
       click: function click() {
         mkQuill(EditorTextSdk);
       }
     });
+  } else {
+    console.warn("Couldn't find DigitalEditorSdk nor EditorTextSdk – giving up");
   }
-  window.setTimeout(overrideWwSpellcheck, 3000);
 };
 
 init();
