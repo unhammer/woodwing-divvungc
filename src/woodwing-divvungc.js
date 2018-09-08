@@ -3,6 +3,8 @@
 
 "use strict";
 
+console.log("DIVVUN0");
+
 /* :: type reps = Array<string> */
 /* :: type err = {str: string, beg: number, end: number, len: number, typ: string, rep: Array<string>, msg: string} */
 /* :: type errlist = Array<[string, number, number, string, string, Array<string>]> */
@@ -337,9 +339,10 @@ function keepKeypresses(elt/*:HTMLElement*/) {
 // range, when we send it through RegExp)
 const WORDSEP = "[ \\n\\t\\r.,\\/#!$%\\^&\\*;:{}=_`~()\\-]";
 
-var DivvunEditor = function(editorWrapper/*:HTMLElement*/, mode/*:string*/, wwTextsRaw/*:Array<string>*/)/*:void*/ {
+var DivvunEditor = function(editorWrapper/*:HTMLElement*/, mode/*:string*/, wwTextsRaw/*:Array<string>*/, wwEditor/*:EditorTextSdkType*/)/*:void*/ {
   let self = this;
   this.editorWrapper = editorWrapper;
+  this.wwEditor = wwEditor;
   keepKeypresses(editorWrapper);
   let repmenu = $('<div id="divvun-repmenu" style="display:none" role="listbox"><div style="left: 0px;" id="divvun-repmenu_co" role="presentation"><table id="divvun-repmenu_tbl" role="presentation" cellspacing="0" border="0" cellpadding="0"></table></div></div>');
   let editorDiv = $('<div spellcheck="false">');
@@ -483,8 +486,8 @@ DivvunEditor.prototype.wwSepsInDelta = function(delta) {
 
 DivvunEditor.prototype.cancel = function()/*: void*/ {
   this.editorWrapper.remove();
-  if(!EditorTextSdk.cancelTransaction()) {
-    alert("Failed to cancel transaction, WoodWing says: " + EditorTextSdk.getErrorMessage());
+  if(!this.wwEditor.cancelTransaction()) {
+    alert("Failed to cancel transaction, WoodWing says: " + this.wwEditor.getErrorMessage());
   }
 };
 
@@ -569,16 +572,16 @@ DivvunEditor.prototype.exitAndApply = function()/*: void*/ {
         putBackShy.push(iText);
         console.log("Removing soft hyphens in component " + iText, "; Diffs: ", this.wwTextsRaw[iText] !== this.wwTexts[iText], "wwRaw.length", this.wwTextsRaw[iText].length, "checked.length", this.wwTexts[iText].length, "softHyphs found in wwRaw at: ", softHyphs);
         softHyphs.forEach(function(i) {
-          if (!EditorTextSdk.replaceText(iText, i, i+1, "")) {
-            console.warn('Could not remove soft hyphens in text ' + iText + ' for replaceText due to error ' + EditorTextSdk.getErrorMessage());
+          if (!this.wwEditor.replaceText(iText, i, i+1, "")) {
+            console.warn('Could not remove soft hyphens in text ' + iText + ' for replaceText due to error ' + this.wwEditor.getErrorMessage());
           }
         });
       }
       // Now perform the actual replacements:
       reps.map(function(r) {
         console.log("In component " + iText + ", replace substring from " + r.beg + " to " + r.end + " with '" + r.rep + "'");
-        if (!EditorTextSdk.replaceText(iText, r.beg, r.end, r.rep)) {
-          console.warn('Could not replaceText due to error ' + EditorTextSdk.getErrorMessage());
+        if (!this.wwEditor.replaceText(iText, r.beg, r.end, r.rep)) {
+          console.warn('Could not replaceText due to error ' + this.wwEditor.getErrorMessage());
         }
       });
     }
@@ -588,7 +591,7 @@ DivvunEditor.prototype.exitAndApply = function()/*: void*/ {
   // Now get the current state of the editor, and replace
   // words-without-shy with words-with-shy, but only for the texts
   // that we actually had replacements in:
-  let wwTextsNoShy = EditorTextSdk.getTexts(),
+  let wwTextsNoShy = this.wwEditor.getTexts(),
       shymap = this.shymap;
   putBackShy.forEach(function(iText){
     indicesOfWords(wwTextsNoShy[iText]).forEach(function(i) {
@@ -598,16 +601,16 @@ DivvunEditor.prototype.exitAndApply = function()/*: void*/ {
       if(shymap && shymap.hasOwnProperty(wNoShy)) {
         let wShy = shymap[wNoShy];
         // console.log("Putting back soft hyphens for word", wNoShy, "at", beg, end, " → ", wShy);
-        if (!EditorTextSdk.replaceText(iText, beg, end, wShy)) {
-          console.warn('Could not replaceText (putBackShy) due to error ' + EditorTextSdk.getErrorMessage());
+        if (!this.wwEditor.replaceText(iText, beg, end, wShy)) {
+          console.warn('Could not replaceText (putBackShy) due to error ' + this.wwEditor.getErrorMessage());
         }
       }
     });
   });
 
   this.editorWrapper.remove();
-  if(!EditorTextSdk.closeTransaction()) {
-    alert("Failed to close transaction, WoodWing says: " + EditorTextSdk.getErrorMessage());
+  if(!this.wwEditor.closeTransaction()) {
+    alert("Failed to close transaction, WoodWing says: " + this.wwEditor.getErrorMessage());
   }
 };
 
@@ -1096,7 +1099,7 @@ var mkQuill = function(wwEditor/*:EditorTextSdkType*/)/*:void*/ {
   // var mode = "sme|sme_gram";   // TODO: mode settable?
   var mode = "sme|sme_spell";
   let wwTexts = wwEditor.getTexts();
-  let _divvuneditor = new DivvunEditor(editorWrapper.get()[0], mode, wwTexts);
+  let _divvuneditor = new DivvunEditor(editorWrapper.get()[0], mode, wwTexts, wwEditor);
   overrideWwSpellcheck();
 };
 
