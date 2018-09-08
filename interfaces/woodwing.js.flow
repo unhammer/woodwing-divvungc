@@ -8,6 +8,9 @@ declare class EditorTextSdk {
   static closeTransaction(): bool;
   static cancelTransaction(): bool;
   static isInTransaction(): bool;
+  // Are the following available in print editor, or just digital?
+  static canEditArticle(): bool;
+  static selectText(text: number, startPos: number, endPos: number);
 }
 
 declare module 'EditorTextSdk' {
@@ -22,4 +25,15 @@ declare module 'EditorUiSdk' {
   declare var exports: Class<EditorUiSdk>;
 }
 
+declare class Article {
+  getEditor(): EditorTextSdk;
+}
 
+declare class DigitalEditorSdk {
+  static onOpenArticle(( article: Article ) => any): void;
+  static addToolbarButton({ label: string, onAction: Function }): void;
+}
+
+declare module 'DigitalEditorSdk' {
+  declare var exports: Class<DigitalEditorSdk>;
+}
