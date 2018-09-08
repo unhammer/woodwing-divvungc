@@ -1077,16 +1077,16 @@ let overrideWwSpellcheck = function() {
 };
 
 /* Should check if it's been run so we don't get a bunch of editors */
-var mkQuill = function() {
+var mkQuill = function(wwEditor/*:EditorTextSdkType*/)/*:void*/ {
   $('#divvun-editor').remove();
-  if(!EditorTextSdk.canEditArticle()) {
+  if(!wwEditor.canEditArticle()) {
     alert("WoodWing says we can't edit the article.");
   }
-  if(!EditorTextSdk.startTransaction()) {
-    alert("Failed to start transaction, WoodWing says: " + EditorTextSdk.getErrorMessage());
+  if(!wwEditor.startTransaction()) {
+    alert("Failed to start transaction, WoodWing says: " + wwEditor.getErrorMessage());
     // Did we start one already? This seems to happen with undos.
-    if(!EditorTextSdk.cancelTransaction()) {
-      alert("Failed to cancel transaction, WoodWing says: " + EditorTextSdk.getErrorMessage());
+    if(!wwEditor.cancelTransaction()) {
+      alert("Failed to cancel transaction, WoodWing says: " + wwEditor.getErrorMessage());
     }
     return;
   }
@@ -1095,8 +1095,8 @@ var mkQuill = function() {
   // div ^ has to exist in document before we do ↓
   // var mode = "sme|sme_gram";   // TODO: mode settable?
   var mode = "sme|sme_spell";
-  let wwTexts = EditorTextSdk.getTexts();
-  let editor = new DivvunEditor(editorWrapper.get()[0], mode, wwTexts);
+  let wwTexts = wwEditor.getTexts();
+  let _divvuneditor = new DivvunEditor(editorWrapper.get()[0], mode, wwTexts);
   overrideWwSpellcheck();
 };
 
@@ -1124,3 +1124,11 @@ var init = function() {
 };
 
 init();
+
+// TODO wip:
+DigitalEditorSdk.onOpenArticle(function( article ) {
+  console.log('Digital Article opened', article);
+  textEditor = article.getEditor();
+  createSampleMenu();
+  createTransactionMenu();
+});

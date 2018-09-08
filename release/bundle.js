@@ -957,16 +957,16 @@ var overrideWwSpellcheck = function overrideWwSpellcheck() {
   $(".writr").attr("spellcheck", "false");
 };
 
-var mkQuill = function mkQuill() {
+var mkQuill = function mkQuill(wwEditor) {
   $('#divvun-editor').remove();
-  if (!EditorTextSdk.canEditArticle()) {
+  if (!wwEditor.canEditArticle()) {
     alert("WoodWing says we can't edit the article.");
   }
-  if (!EditorTextSdk.startTransaction()) {
-    alert("Failed to start transaction, WoodWing says: " + EditorTextSdk.getErrorMessage());
+  if (!wwEditor.startTransaction()) {
+    alert("Failed to start transaction, WoodWing says: " + wwEditor.getErrorMessage());
 
-    if (!EditorTextSdk.cancelTransaction()) {
-      alert("Failed to cancel transaction, WoodWing says: " + EditorTextSdk.getErrorMessage());
+    if (!wwEditor.cancelTransaction()) {
+      alert("Failed to cancel transaction, WoodWing says: " + wwEditor.getErrorMessage());
     }
     return;
   }
@@ -974,8 +974,8 @@ var mkQuill = function mkQuill() {
   $(window.document.body).append(editorWrapper);
 
   var mode = "sme|sme_spell";
-  var wwTexts = EditorTextSdk.getTexts();
-  var editor = new DivvunEditor(editorWrapper.get()[0], mode, wwTexts);
+  var wwTexts = wwEditor.getTexts();
+  var _divvuneditor = new DivvunEditor(editorWrapper.get()[0], mode, wwTexts);
   overrideWwSpellcheck();
 };
 
@@ -1001,5 +1001,12 @@ var init = function init() {
 };
 
 init();
+
+DigitalEditorSdk.onOpenArticle(function (article) {
+  console.log('Digital Article opened', article);
+  textEditor = article.getEditor();
+  createSampleMenu();
+  createTransactionMenu();
+});
 //# sourceMappingURL=woodwing-divvungc.js.map
 }());
