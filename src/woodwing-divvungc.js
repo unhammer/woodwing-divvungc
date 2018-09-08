@@ -1121,7 +1121,7 @@ var init = function() {
   initCss(PLUGINDIR + "style.css?2");
   initL10n("sme", PLUGINDIR);              // TODO: hardcodedlang
   window.setTimeout(overrideWwSpellcheck, 3000);
-  if(DigitalEditorSdk !== undefined) {
+  if(typeof DigitalEditorSdk !== 'undefined') {
     DigitalEditorSdk.onOpenArticle(function( article ) {
       console.log('Digital Article opened', article);
       DigitalEditorSdk.addToolbarButton({
@@ -1130,7 +1130,7 @@ var init = function() {
       });
     });
   }
-  else if(EditorTextSdk !== undefined) {
+  else if(typeof EditorTextSdk !== 'undefined') {
     var _subMenuId = EditorUiSdk.createAction({
       label: 'Divvun',
       icon: PLUGINDIR + "divvun.ico",
