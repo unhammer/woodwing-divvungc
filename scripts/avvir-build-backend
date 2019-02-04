@@ -24,14 +24,18 @@ LC_ALL=$(locale -a|grep UTF-8|head -1)
 export LC_ALL
 
 # It seems like g++/clang, git and svn are already there, but we need these:
-sudo port install cmake         # visclg3
-sudo port install boost         # visclg3
-sudo port install icu           # visclg3
-sudo port install bison         # hfst (https://github.com/hfst/hfst/issues/178#issuecomment-192242208)
-sudo port install pugixml       # divvun-gramcheck
-sudo port install libarchive    # divvun-gramcheck
-sudo port install py35-tornado  # apy
-sudo port install apertium      # apy (for apertium-deshtml/rehtml)
+sudo port -N install cmake         # visclg3
+sudo port -N install boost         # visclg3
+sudo port -N install icu           # visclg3
+sudo port -N install automake      # hfst
+sudo port -N install autoconf      # hfst
+sudo port -N install bison         # hfst (https://github.com/hfst/hfst/issues/178#issuecomment-192242208)
+sudo port -N install pugixml       # divvun-gramcheck
+sudo port -N install libarchive    # divvun-gramcheck
+sudo port -N install libtool       # divvun-gramcheck
+sudo port -N install py35-tornado  # apy
+sudo port -N install apertium      # apy (for apertium-deshtml/rehtml)
+sudo port -N install pkgconfig     # hfst-ospell
 
 svn co http://visl.sdu.dk/svn/visl/tools/vislcg3/trunk/ vislcg3-trunk
 (
@@ -45,7 +49,7 @@ git clone https://github.com/hfst/hfst
 (
     cd hfst
     ./autogen.sh
-    ./configure --enable-xfst --enable-proc --enable-lexc --enable-all-tools --enable-silent-rules --prefix="${PREFIX}"
+    ./configure --enable-static --enable-xfst --enable-proc --enable-lexc --enable-all-tools --enable-silent-rules --prefix="${PREFIX}"
     make -j3
     make install
 )
@@ -54,7 +58,7 @@ git clone https://github.com/hfst/hfst-ospell
 (
     cd hfst-ospell
     ./autogen.sh
-    ./configure --enable-zhfst --prefix="${PREFIX}"
+    ./configure --enable-static --enable-zhfst --without-libxmlpp --prefix="${PREFIX}"
     make -j3
     make install
 )
@@ -69,9 +73,9 @@ cp /opt/local/include/archive.h "${PREFIX}/include"
 cp /opt/local/include/archive_entry.h "${PREFIX}/include"
 cp /opt/local/lib/libarchive.* "${PREFIX}/lib"
 
-git clone https://github.com/divvun/divvun-gramcheck/
+git clone https://github.com/divvun/libdivvun
 (
-    cd divvun-gramcheck
+    cd libdivvun
     export CXXFLAGS="-I${PREFIX}/include ${CXXFLAGS:-}"
     export CPPFLAGS="-I${PREFIX}/include ${CPPFLAGS:-}"
     export PKG_CONFIG_PATH="${PREFIX}/lib/pkgconfig:/opt/local/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
@@ -79,7 +83,7 @@ git clone https://github.com/divvun/divvun-gramcheck/
     export PATH="${PREFIX}/bin:$PATH"
     export LDFLAGS="${LDFLAGS:-} -Wl,-rpath,${PREFIX}/lib -L${PREFIX}/lib"
     ./autogen.sh
-    ./configure --enable-cgspell --enable-xml --prefix="${PREFIX}"
+    ./configure --enable-static --enable-cgspell --enable-xml --prefix="${PREFIX}"
     make -j3
     make install
 )
@@ -109,7 +113,7 @@ cat >no.divvun.gramcheck.plist <<EOF
 <key>Label</key><string>no.divvun.gramcheck</string>
 <key>ProgramArguments</key>
 <array>
-        <string>/opt/local/bin/python3</string>
+        <string>/opt/local/bin/python3.5</string>
         <string>${PWD}/apertium-apy/servlet.py</string>
         <string>${PREFIX}/share/apertium/modes</string>
         <string>--max-idle-secs</string>
@@ -169,6 +173,7 @@ cat >no.divvun.update.plist <<EOF
     <dict>
         <key>LC_ALL</key> <string>en_US.UTF-8</string>
         <key>PATH</key>   <string>${PREFIX}/bin:/opt/local/bin:/opt/local/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>HOME</key>   <string>${HOME}</string>
     </dict>
 <key>StandardErrorPath</key><string>${LOGS}/no.divvun.update.err</string>
 <key>StandardOutPath</key>  <string>${LOGS}/no.divvun.update.out</string>
