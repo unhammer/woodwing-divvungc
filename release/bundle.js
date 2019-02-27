@@ -10,40 +10,26 @@
 
 "use strict";
 
-var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
 var debug = window.location.protocol === "file:";
 var log = debug ? console.log.bind(window.console) : function (_ignore) {};
 
-var l10n = function l10n() {
+var l10n = function () {
   if (document.l10n === undefined) {
     console.warn("l20n.js failed?");
     return {
-      formatValue: function formatValue(v) {
+      formatValue: function (v) {
         return new Promise(function (resolve, _) {
           resolve(v);
         });
       },
-      requestLanguages: function requestLanguages(_ignore) {}
+      requestLanguages: function (_ignore) {}
     };
   }
 
   return document.l10n;
 };
 
-var initL10n = function initL10n(lang, dir) {
+var initL10n = function (lang, dir) {
   l10n().requestLanguages([lang]);
   l10n().formatValue('editor_placeholder').then(function (t) {
     $('.ql-editor').attr('data-placeholder', t);
@@ -54,152 +40,130 @@ var initL10n = function initL10n(lang, dir) {
   $('head').append(el);
 };
 
-var Delta = Quill.import('delta');
+let Delta = Quill.import('delta');
 
-var Inline = Quill.import('blots/inline');
+let Inline = Quill.import('blots/inline');
+class ErrorBlot extends Inline {
+  static create(err) {
+    let node = super.create();
+    if (typeof err != "object") {
+      console.log("Error creating ErrorBlot, expected object, not " + typeof err);
+      return super.create();
+    }
+    $(node).data("error", err);
 
-var ErrorBlot = function (_Inline) {
-  _inherits(ErrorBlot, _Inline);
-
-  function ErrorBlot() {
-    _classCallCheck(this, ErrorBlot);
-
-    return _possibleConstructorReturn(this, (ErrorBlot.__proto__ || Object.getPrototypeOf(ErrorBlot)).apply(this, arguments));
+    var colour = "blue";
+    $(node).addClass("divvun-error-" + colour);
+    return node;
+  }
+  static formats(node) {
+    return $(node).data("error");
   }
 
-  _createClass(ErrorBlot, [{
-    key: "showrep",
-    value: function showrep(beg, len, editor) {
-      var spanoff = $(this.domNode).offset(),
-          newoff = { top: spanoff.top + 20,
-        left: spanoff.left },
-          repmenu = $('#divvun-repmenu'),
-          at_same_err = repmenu.offset().top == newoff.top && repmenu.offset().left == newoff.left;
-      if (repmenu.is(":visible") && at_same_err) {
-        ErrorBlot.hiderep();
+  showrep(beg, len, editor) {
+    var spanoff = $(this.domNode).offset(),
+        newoff = { top: spanoff.top + 20,
+      left: spanoff.left },
+        repmenu = $('#divvun-repmenu'),
+        at_same_err = repmenu.offset().top == newoff.top && repmenu.offset().left == newoff.left;
+    if (repmenu.is(":visible") && at_same_err) {
+      ErrorBlot.hiderep();
+    } else {
+      repmenu.show();
+      repmenu.offset(newoff);
+      if (!at_same_err) {
+        this.makerepmenu(beg, len, editor);
+      }
+    }
+  }
+  static hiderep() {
+    var repmenu = $('#divvun-repmenu');
+    repmenu.offset({ top: 0, left: 0 });
+    repmenu.hide();
+  }
+  makerepmenu(beg, len, editor) {
+    var span = this.domNode,
+        err = $(span).data("error");
+
+    $("#divvun-repmenu_tbl").empty();
+    var tbody = $(document.createElement('tbody'));
+    tbody.attr("role", "listbox");
+
+    if (err.msg == "") {
+      err.msg = "Ukjend feiltype";
+    }
+    var tr_msg = $(document.createElement('tr')),
+        td_msg = $(document.createElement('td')),
+        a_msg = $(document.createElement('span'));
+    a_msg.html(err.msg);
+    a_msg.attr("aria-disabled", "true");
+    td_msg.append(a_msg);
+    td_msg.addClass("divvun-repmenu_msg");
+    tr_msg.append(td_msg);
+    tbody.append(tr_msg);
+
+    err.rep.map(function (r) {
+      var tr_rep = $(document.createElement('tr')),
+          td_rep = $(document.createElement('td')),
+          a_rep = $(document.createElement('a'));
+      if (r == "") {
+        a_rep.text("(fjern)");
       } else {
-        repmenu.show();
-        repmenu.offset(newoff);
-        if (!at_same_err) {
-          this.makerepmenu(beg, len, editor);
-        }
+        a_rep.text(r.replace(/ /g, " "));
       }
-    }
-  }, {
-    key: "makerepmenu",
-    value: function makerepmenu(beg, len, editor) {
-      var span = this.domNode,
-          err = $(span).data("error");
-
-      $("#divvun-repmenu_tbl").empty();
-      var tbody = $(document.createElement('tbody'));
-      tbody.attr("role", "listbox");
-
-      if (err.msg == "") {
-        err.msg = "Ukjend feiltype";
+      if (r.lastIndexOf(" ", 0) == 0 || r.indexOf(" ", r.length - 1) == r.length - 1) {
+        a_rep.addClass("divvun-hl-space");
       }
-      var tr_msg = $(document.createElement('tr')),
-          td_msg = $(document.createElement('td')),
-          a_msg = $(document.createElement('span'));
-      a_msg.html(err.msg);
-      a_msg.attr("aria-disabled", "true");
-      td_msg.append(a_msg);
-      td_msg.addClass("divvun-repmenu_msg");
-      tr_msg.append(td_msg);
-      tbody.append(tr_msg);
+      a_rep.attr("role", "option");
+      td_rep.append(a_rep);
+      td_rep.addClass("divvun-repmenu_rep");
+      td_rep.addClass("divvun-repmenu_nonfirst");
 
-      err.rep.map(function (r) {
-        var tr_rep = $(document.createElement('tr')),
-            td_rep = $(document.createElement('td')),
-            a_rep = $(document.createElement('a'));
-        if (r == "") {
-          a_rep.text("(fjern)");
-        } else {
-          a_rep.text(r.replace(/ /g, " "));
-        }
-        if (r.lastIndexOf(" ", 0) == 0 || r.indexOf(" ", r.length - 1) == r.length - 1) {
-          a_rep.addClass("divvun-hl-space");
-        }
-        a_rep.attr("role", "option");
-        td_rep.append(a_rep);
-        td_rep.addClass("divvun-repmenu_rep");
-        td_rep.addClass("divvun-repmenu_nonfirst");
+      td_rep.click({ beg: beg,
+        len: len,
+        r: r
+      }, editor.replaceErr.bind(editor));
+      tr_rep.append(td_rep);
+      tbody.append(tr_rep);
+    });
 
-        td_rep.click({ beg: beg,
-          len: len,
-          r: r
-        }, editor.replaceErr.bind(editor));
-        tr_rep.append(td_rep);
-        tbody.append(tr_rep);
+    if (false) {
+      var tr_ign = $(document.createElement('tr')),
+          td_ign = $(document.createElement('td')),
+          a_ign = $(document.createElement('a'));
+      l10n().formatValue('hide_errtype').then(function (t) {
+        a_ign.text(t);
       });
-
-      if (false) {
-        var tr_ign = $(document.createElement('tr')),
-            td_ign = $(document.createElement('td')),
-            a_ign = $(document.createElement('a'));
-        l10n().formatValue('hide_errtype').then(function (t) {
-          a_ign.text(t);
-        });
-        a_ign.attr("role", "option");
-        td_ign.append(a_ign);
-        td_ign.addClass("divvun-repmenu_ign");
-        td_ign.addClass("divvun-repmenu_nonfirst");
-        tr_ign.append(td_ign);
-        tbody.append(tr_ign);
-        a_ign.click({ err: err }, function (e) {
-          var err = e.data.err;
-          var igntyps = safeGetItem("igntyps", new Set());
-          igntyps.add(err.typ);
-          safeSetItem("igntyps", igntyps);
-          editor.updateIgnored();
-          editor.check();
-        });
-      }
-
-      $("#divvun-repmenu_tbl").append(tbody);
+      a_ign.attr("role", "option");
+      td_ign.append(a_ign);
+      td_ign.addClass("divvun-repmenu_ign");
+      td_ign.addClass("divvun-repmenu_nonfirst");
+      tr_ign.append(td_ign);
+      tbody.append(tr_ign);
+      a_ign.click({ err: err }, function (e) {
+        var err = e.data.err;
+        var igntyps = safeGetItem("igntyps", new Set());
+        igntyps.add(err.typ);
+        safeSetItem("igntyps", igntyps);
+        editor.updateIgnored();
+        editor.check();
+      });
     }
-  }], [{
-    key: "create",
-    value: function create(err) {
-      var node = _get(ErrorBlot.__proto__ || Object.getPrototypeOf(ErrorBlot), "create", this).call(this);
-      if ((typeof err === "undefined" ? "undefined" : _typeof(err)) != "object") {
-        console.log("Error creating ErrorBlot, expected object, not " + (typeof err === "undefined" ? "undefined" : _typeof(err)));
-        return _get(ErrorBlot.__proto__ || Object.getPrototypeOf(ErrorBlot), "create", this).call(this);
-      }
-      $(node).data("error", err);
 
-      var colour = "blue";
-      $(node).addClass("divvun-error-" + colour);
-      return node;
-    }
-  }, {
-    key: "formats",
-    value: function formats(node) {
-      return $(node).data("error");
-    }
-  }, {
-    key: "hiderep",
-    value: function hiderep() {
-      var repmenu = $('#divvun-repmenu');
-      repmenu.offset({ top: 0, left: 0 });
-      repmenu.hide();
-    }
-  }]);
-
-  return ErrorBlot;
-}(Inline);
-
+    $("#divvun-repmenu_tbl").append(tbody);
+  }
+}
 ErrorBlot.blotName = 'error';
 ErrorBlot.tagName = 'span';
 ErrorBlot.className = 'divvun-error';
 Quill.register(ErrorBlot);
 
-var u8maxlen = function u8maxlen(str, max_B) {
-  var len = str.length;
-  var blen = 0;
+var u8maxlen = function (str, max_B) {
+  let len = str.length;
+  let blen = 0;
   var best = 0;
-  for (var i = 0; i < len; i++) {
-    var code = str.charCodeAt(i);
+  for (let i = 0; i < len; i++) {
+    let code = str.charCodeAt(i);
     if (code > 0x7F && code <= 0x7FF) {
       blen += 2;
     } else if (code >= 0xD800 && code <= 0xDBFF) {
@@ -219,7 +183,7 @@ var u8maxlen = function u8maxlen(str, max_B) {
   return best;
 };
 
-var test_u8maxlen = function test_u8maxlen() {
+var test_u8maxlen = function () {
   assert(0 === u8maxlen("", 0), "0");
   assert(0 === u8maxlen("a", 0), "a0");
   assert(0 === u8maxlen("æ", 0), "æ0");
@@ -251,23 +215,23 @@ var test_u8maxlen = function test_u8maxlen() {
   return "all good";
 };
 
-var assert = function assert(condition, message) {
+var assert = function (condition, message) {
   if (!condition) {
     message = message || "Assertion failed";
     throw new Error(message);
   }
 };
 
-var APYMAXBYTES = 512;
+let APYMAXBYTES = 512;
 
-var lastSentenceEnd = function lastSentenceEnd(str) {
-  var sep = /[.:!?]\s/g;
-  var found = 0;
-  for (var res = sep.exec(str); res !== null; res = sep.exec(str)) {
+var lastSentenceEnd = function (str) {
+  let sep = /[.:!?]\s/g;
+  let found = 0;
+  for (let res = sep.exec(str); res !== null; res = sep.exec(str)) {
     found = res.index + res.length;
   }
   if (found === 0) {
-    var lastSpace = str.lastIndexOf(" ");
+    let lastSpace = str.lastIndexOf(" ");
     if (lastSpace !== -1) {
       return lastSpace;
     } else {
@@ -277,23 +241,23 @@ var lastSentenceEnd = function lastSentenceEnd(str) {
   return found;
 };
 
-var textCutOff = function textCutOff(str, max_B) {
-  var len = str.length;
-  var maxu8 = u8maxlen(str, max_B);
+var textCutOff = function (str, max_B) {
+  let len = str.length;
+  let maxu8 = u8maxlen(str, max_B);
 
   if (len <= maxu8) {
     return len;
   }
 
-  var minu8 = Math.floor(0.7 * maxu8);
-  var sub = str.substring(minu8, maxu8);
-  var found = lastSentenceEnd(sub);
+  let minu8 = Math.floor(0.7 * maxu8);
+  let sub = str.substring(minu8, maxu8);
+  let found = lastSentenceEnd(sub);
   console.log(minu8, maxu8, found + minu8 + 1);
   return minu8 + found + 1;
 };
 
 function keepKeypresses(elt) {
-  var keypress = 'keypress';
+  let keypress = 'keypress';
   elt.addEventListener(keypress, function (event) {
     event.stopPropagation();
   }, {
@@ -303,29 +267,29 @@ function keepKeypresses(elt) {
   });
 }
 
-var WORDSEP = "[ \\n\\t\\r.,\\/#!$%\\^&\\*;:{}=_`~()\\-]";
+const WORDSEP = "[ \\n\\t\\r.,\\/#!$%\\^&\\*;:{}=_`~()\\-]";
 
-var DivvunEditor = function DivvunEditor(editorWrapper, mode, wwTextsRaw, wwEditor) {
-  var self = this;
+var DivvunEditor = function (editorWrapper, mode, wwTextsRaw, wwEditor) {
+  let self = this;
   this.editorWrapper = editorWrapper;
   this.wwEditor = wwEditor;
   keepKeypresses(editorWrapper);
-  var repmenu = $('<div id="divvun-repmenu" style="display:none" role="listbox"><div style="left: 0px;" id="divvun-repmenu_co" role="presentation"><table id="divvun-repmenu_tbl" role="presentation" cellspacing="0" border="0" cellpadding="0"></table></div></div>');
-  var editorDiv = $('<div spellcheck="false">');
+  let repmenu = $('<div id="divvun-repmenu" style="display:none" role="listbox"><div style="left: 0px;" id="divvun-repmenu_co" role="presentation"><table id="divvun-repmenu_tbl" role="presentation" cellspacing="0" border="0" cellpadding="0"></table></div></div>');
+  let editorDiv = $('<div spellcheck="false">');
   $(editorWrapper).append(editorDiv).append(repmenu);
-  var toolbarOptions = [['check', 'exitandapply', 'cancel']];
+  let toolbarOptions = [['check', 'exitandapply', 'cancel']];
   this.quill = new Quill(editorDiv.get()[0], {
     modules: {
       toolbar: {
         container: toolbarOptions,
         handlers: {
-          check: function check(_val) {
+          check: function (_val) {
             self.check();
           },
-          exitandapply: function exitandapply(_val) {
+          exitandapply: function (_val) {
             self.exitAndApply();
           },
-          cancel: function cancel(_val) {
+          cancel: function (_val) {
             self.cancel();
           }
         }
@@ -338,8 +302,8 @@ var DivvunEditor = function DivvunEditor(editorWrapper, mode, wwTextsRaw, wwEdit
   this.DEFAULT_LANG = "sme";
   this.DEFAULT_VARIANT = "gram";
 
-  var sameserver = false;
-  var uitserver = false;
+  let sameserver = false;
+  let uitserver = false;
   if (window.location.hostname === "") {
     this.hostname = "localhost";
     this.port = "2737";
@@ -376,7 +340,7 @@ var DivvunEditor = function DivvunEditor(editorWrapper, mode, wwTextsRaw, wwEdit
 
   $.ajaxSetup({
     statusCode: {
-      "401": function _() {}
+      "401": function () {}
     }
   });
 
@@ -402,11 +366,11 @@ var DivvunEditor = function DivvunEditor(editorWrapper, mode, wwTextsRaw, wwEdit
 };
 
 DivvunEditor.prototype.makeShyMap = function (textsMut) {
-  var map = {};
-  var wsepRe = new RegExp(WORDSEP + "+");
+  let map = {};
+  let wsepRe = new RegExp(WORDSEP + "+");
   textsMut.slice().forEach(function (t) {
     t.split(wsepRe).forEach(function (wShy) {
-      var wBold = wShy.replace(/\u00AD/g, "");
+      let wBold = wShy.replace(/\u00AD/g, "");
       if (wBold != wShy) {
         console.log("Adding ", wBold, wShy);
         map[wBold] = wShy;
@@ -417,8 +381,8 @@ DivvunEditor.prototype.makeShyMap = function (textsMut) {
 };
 
 DivvunEditor.prototype.stashSoftHyphens = function (textsMut) {
-  var texts = textsMut.slice();
-  for (var i = 0; i < texts.length; i++) {
+  let texts = textsMut.slice();
+  for (let i = 0; i < texts.length; i++) {
     texts[i] = texts[i].replace(/\u00AD/g, "");
   }
   return texts;
@@ -427,11 +391,11 @@ DivvunEditor.prototype.stashSoftHyphens = function (textsMut) {
 DivvunEditor.prototype.wwSep = "❡\n";
 DivvunEditor.prototype.wwSepRe = new RegExp(DivvunEditor.prototype.wwSep, "g");
 DivvunEditor.prototype.wwSepsInString = function (str) {
-  var m = str.match(this.wwSepRe);
+  let m = str.match(this.wwSepRe);
   return m ? m.length : 0;
 };
 DivvunEditor.prototype.wwSepsInDelta = function (delta) {
-  var self = this;
+  let self = this;
   return delta.ops.reduce(function (acc, op) {
     if (op.insert && typeof op.insert === "string") {
       return acc + self.wwSepsInString(op.insert);
@@ -448,11 +412,11 @@ DivvunEditor.prototype.cancel = function () {
   }
 };
 
-var diff2reps = function diff2reps(orig, changed) {
-  var d = orig.diff(changed);
+var diff2reps = function (orig, changed) {
+  let d = orig.diff(changed);
 
   var iEnd = 0;
-  for (var i = 0; i < d.ops.length; i++) {
+  for (let i = 0; i < d.ops.length; i++) {
     if (d.ops[i].retain) {
       iEnd += d.ops[i].retain;
     }
@@ -463,26 +427,26 @@ var diff2reps = function diff2reps(orig, changed) {
   }
 
   var reps = [];
-  for (var _i = d.ops.length - 1; _i >= 0; _i--) {
-    if (d.ops[_i].retain) {
-      iEnd -= d.ops[_i].retain;
+  for (let i = d.ops.length - 1; i >= 0; i--) {
+    if (d.ops[i].retain) {
+      iEnd -= d.ops[i].retain;
     };
-    if (d.ops[_i].delete) {
-      reps.push({ beg: iEnd - d.ops[_i].delete,
+    if (d.ops[i].delete) {
+      reps.push({ beg: iEnd - d.ops[i].delete,
         end: iEnd,
         rep: "" });
-      iEnd -= d.ops[_i].delete;
+      iEnd -= d.ops[i].delete;
     };
-    if (d.ops[_i].insert) {
+    if (d.ops[i].insert) {
       reps.push({ beg: iEnd,
         end: iEnd,
-        rep: d.ops[_i].insert });
+        rep: d.ops[i].insert });
     }
   }
   return reps;
 };
 
-var allIndicesOf = function allIndicesOf(str, char) {
+var allIndicesOf = function (str, char) {
   var a = [];
   for (var i = str.length; i--;) {
     if (str[i] === char) {
@@ -493,10 +457,8 @@ var allIndicesOf = function allIndicesOf(str, char) {
 };
 
 DivvunEditor.prototype.exitAndApply = function () {
-  var _this2 = this;
-
-  var wwEditor = this.wwEditor;
-  var texts = this.getFText().split(this.wwSep);
+  let wwEditor = this.wwEditor;
+  let texts = this.getFText().split(this.wwSep);
 
   if (texts[texts.length - 1] !== "") {
     console.warn("Unexpected non-empty last element of checked Divvun texts: ", texts[texts.length - 1]);
@@ -514,17 +476,16 @@ DivvunEditor.prototype.exitAndApply = function () {
 
   var putBackShy = [];
   var textsOff = 0;
-
-  var _loop = function _loop(iText) {
-    var endIncSep = texts[iText].length + _this2.wwSep.length;
-    var orig = new Delta({ ops: [{ insert: _this2.wwTexts[iText] + _this2.wwSep }] });
-    var changed = _this2.quill.getContents(textsOff, endIncSep);
-    var reps = diff2reps(orig, changed);
+  for (let iText = 0; iText < texts.length - 1; iText++) {
+    let endIncSep = texts[iText].length + this.wwSep.length;
+    let orig = new Delta({ ops: [{ insert: this.wwTexts[iText] + this.wwSep }] });
+    let changed = this.quill.getContents(textsOff, endIncSep);
+    let reps = diff2reps(orig, changed);
     if (reps.length > 0) {
-      var softHyphs = allIndicesOf(_this2.wwTextsRaw[iText], "\xAD");
+      let softHyphs = allIndicesOf(this.wwTextsRaw[iText], "\xAD");
       if (softHyphs.length > 0) {
         putBackShy.push(iText);
-        console.log("Removing soft hyphens in component " + iText, "; Diffs: ", _this2.wwTextsRaw[iText] !== _this2.wwTexts[iText], "wwRaw.length", _this2.wwTextsRaw[iText].length, "checked.length", _this2.wwTexts[iText].length, "softHyphs found in wwRaw at: ", softHyphs);
+        console.log("Removing soft hyphens in component " + iText, "; Diffs: ", this.wwTextsRaw[iText] !== this.wwTexts[iText], "wwRaw.length", this.wwTextsRaw[iText].length, "checked.length", this.wwTexts[iText].length, "softHyphs found in wwRaw at: ", softHyphs);
         softHyphs.forEach(function (i) {
           if (!wwEditor.replaceText(iText, i, i + 1, "")) {
             console.warn('Could not remove soft hyphens in text ' + iText + ' for replaceText due to error ' + wwEditor.getErrorMessage());
@@ -540,21 +501,17 @@ DivvunEditor.prototype.exitAndApply = function () {
       });
     }
     textsOff += endIncSep;
-  };
-
-  for (var iText = 0; iText < texts.length - 1; iText++) {
-    _loop(iText);
   }
 
-  var wwTextsNoShy = wwEditor.getTexts(),
+  let wwTextsNoShy = wwEditor.getTexts(),
       shymap = this.shymap;
   putBackShy.forEach(function (iText) {
     indicesOfWords(wwTextsNoShy[iText]).forEach(function (i) {
-      var beg = i[0],
+      let beg = i[0],
           end = i[1],
           wNoShy = wwTextsNoShy[iText].substring(beg, end);
       if (shymap && shymap.hasOwnProperty(wNoShy)) {
-        var wShy = shymap[wNoShy];
+        let wShy = shymap[wNoShy];
 
         if (!wwEditor.replaceText(iText, beg, end, wShy)) {
           console.warn('Could not replaceText (putBackShy) due to error ' + wwEditor.getErrorMessage());
@@ -569,8 +526,8 @@ DivvunEditor.prototype.exitAndApply = function () {
   }
 };
 
-var indicesOfWords = function indicesOfWords(str) {
-  var wsepRe = new RegExp(WORDSEP + "+\|$", "g");
+var indicesOfWords = function (str) {
+  let wsepRe = new RegExp(WORDSEP + "+\|$", "g");
   var words = [];
   var match;
   var last = 0;
@@ -591,29 +548,25 @@ var indicesOfWords = function indicesOfWords(str) {
 };
 
 DivvunEditor.prototype.getModes = function () {
-  var self = this;
+  let self = this;
   this.modes = {};
-  var _xhr = $.ajax(this.modesUrl, {
+  let _xhr = $.ajax(this.modesUrl, {
     type: "GET",
     data: {},
-    success: function success(res) {
-      var modelist = res.responseData.map(function (m) {
-        var src = m.sourceLanguage;
-        var trg = m.targetLanguage;
-        var trgsuff = trg.replace(/^[^_]*_/, "");
-        var trglang = trg.replace(/_.*/, "");
+    success: function (res) {
+      let modelist = res.responseData.map(function (m) {
+        let src = m.sourceLanguage;
+        let trg = m.targetLanguage;
+        let trgsuff = trg.replace(/^[^_]*_/, "");
+        let trglang = trg.replace(/_.*/, "");
         return { src: src, trglang: trglang, trgsuff: trgsuff };
       }).filter(function (mm) {
         return mm.src == mm.trglang && mm.trgsuff.match(/^gram/);
       });
 
-      Array.from(groupBy(modelist, function (m) {
+      Array.from(groupBy(modelist, m => {
         return m["src"];
-      }).entries()).map(function (_ref) {
-        var _ref2 = _slicedToArray(_ref, 2),
-            k = _ref2[0],
-            elts = _ref2[1];
-
+      }).entries()).map(function ([k, elts]) {
         self.modes[k] = elts;
       });
     },
@@ -682,8 +635,8 @@ DivvunEditor.prototype.updateIgnored = function () {
   ign.empty();
   if (igntyps.size > 0) {
     igntyps.forEach(function (typ) {
-      var a = $('<a class="glyphicon glyphicon-remove pull-right">').click({ typ: typ }, this.removeIgnored.bind(this)).text("𐄂");
-      var elt = $('<li class="ma2">').text(typ).append(a);
+      let a = $('<a class="glyphicon glyphicon-remove pull-right">').click({ typ: typ }, this.removeIgnored.bind(this)).text("𐄂");
+      let elt = $('<li class="ma2">').text(typ).append(a);
       ign.append(elt);
     });
   } else {
@@ -697,13 +650,13 @@ DivvunEditor.prototype.updateIgnored = function () {
   $('#igntyps-wrapper button').removeClass('glyphicon glyphicon-refresh glyphicon-refresh-animate  ');
 };
 
-var mergeErrs = function mergeErrs(errs) {
-  var byIndices = groupBy(errs, function (x) {
+var mergeErrs = function (errs) {
+  let byIndices = groupBy(errs, x => {
     return x[1].toString() + "→" + x[2].toString();
   });
-  return Array.from(byIndices.values()).map(function (val) {
+  return Array.from(byIndices.values()).map(val => {
     if (val.length > 1) {
-      return val.reduce(function (x1, x2) {
+      return val.reduce((x1, x2) => {
         return [x1[0], x1[1], x1[2], x1[3] + "/" + x2[3], x1[4] + "\n / \n" + x2[4], x1[5].concat(x2[5])];
       });
     } else {
@@ -713,11 +666,9 @@ var mergeErrs = function mergeErrs(errs) {
 };
 
 DivvunEditor.prototype.applyErrs = function (text, res, off) {
-  var _this3 = this;
-
   var igntyps = safeGetItem("igntyps", new Set());
-  var mergedErrs = mergeErrs(res.errs);
-  mergedErrs.forEach(function (x) {
+  let mergedErrs = mergeErrs(res.errs);
+  mergedErrs.forEach(x => {
     var length = x[2] - x[1];
     var err = {
       str: x[0],
@@ -735,12 +686,12 @@ DivvunEditor.prototype.applyErrs = function (text, res, off) {
       console.warn("Unexpected zero replacements for '" + err.str + "' at error indices '" + err.beg + ", " + err.len + "', skipping");
       return;
     }
-    var ftext = _this3.getFText();
+    let ftext = this.getFText();
     if (err.str !== ftext.substr(err.beg, err.len)) {
       console.warn("Unexpected difference between error string '" + err.str + "' and ftext at error beg=" + err.beg + ", len=" + err.len + " ftext.substr='" + ftext.substr(err.beg, err.len) + "', skipping");
       return;
     }
-    _this3.quill.formatText(err.beg, err.len, "error", err);
+    this.quill.formatText(err.beg, err.len, "error", err);
   });
   log(res);
   $("#divvun-serverfault").hide();
@@ -757,7 +708,7 @@ DivvunEditor.prototype.servercheck = function (userpass, text, off, cb, mode) {
   console.log("servercheck", off, mode, text);
 
   return $.ajax(this.checkUrl, {
-    beforeSend: function beforeSend(xhr) {
+    beforeSend: function (xhr) {
       xhr.setRequestHeader("Authorization", basicAuthHeader(userpass));
     },
     type: "POST",
@@ -765,11 +716,11 @@ DivvunEditor.prototype.servercheck = function (userpass, text, off, cb, mode) {
       langpair: mode,
       q: text
     },
-    success: function success(res) {
+    success: function (res) {
       console.log("servercheck_success", off, res);
       cb(text, res, off);
     },
-    error: function error(jqXHR, textStatus, errXHR) {
+    error: function (jqXHR, textStatus, errXHR) {
       console.log("error: " + textStatus + "\n" + errXHR);
       console.log(jqXHR);
       console.log(jqXHR.status);
@@ -813,11 +764,11 @@ DivvunEditor.prototype.getVariant = function (search) {
 };
 
 DivvunEditor.prototype.check = function () {
-  var mode = this.mode;
+  let mode = this.mode;
   this.clearErrs();
-  var text = this.getFText();
+  let text = this.getFText();
 
-  var userpass = { u: "ávvir", p: "test" };
+  let userpass = { u: "ávvir", p: "test" };
 
   while (this.checkXHR.length > 0) {
     this.checkXHR.pop().abort();
@@ -826,11 +777,11 @@ DivvunEditor.prototype.check = function () {
 };
 
 DivvunEditor.prototype.checkSubText = function (userpass, text, off, mode) {
-  var max = textCutOff(text.substr(off), APYMAXBYTES);
-  var subtext = text.substr(off, max);
-  var next_off = off + max;
+  let max = textCutOff(text.substr(off), APYMAXBYTES);
+  let subtext = text.substr(off, max);
+  let next_off = off + max;
   if (next_off < text.length) {
-    var cont = function cont(t, res, o) {
+    let cont = function (t, res, o) {
       this.checkSubText(userpass, text, next_off, mode);
       this.applyErrs(t, res, o);
     };
@@ -841,9 +792,7 @@ DivvunEditor.prototype.checkSubText = function (userpass, text, off, mode) {
 };
 
 DivvunEditor.prototype.idleTimer = null;
-DivvunEditor.prototype.checkOnIdle = function () {
-  var delay = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 7000;
-
+DivvunEditor.prototype.checkOnIdle = function (delay = 7000) {
   window.clearTimeout(this.idleTimer);
   this.idleTimer = window.setTimeout(this.check.bind(this), delay);
 };
@@ -851,8 +800,8 @@ DivvunEditor.prototype.checkOnIdle = function () {
 DivvunEditor.prototype.onTextChange = function (delta, oldDelta, source) {
   if (source == 'api') {} else if (source == 'user') {
     ErrorBlot.hiderep();
-    var oldSeps = this.wwSepsInDelta(oldDelta);
-    var newSeps = this.wwSepsInDelta(this.quill.getContents());
+    let oldSeps = this.wwSepsInDelta(oldDelta);
+    let newSeps = this.wwSepsInDelta(this.quill.getContents());
     if (oldSeps !== newSeps) {
       console.warn("Number of seps changed! Reverting.", oldSeps, newSeps);
       this.quill.setContents(oldDelta);
@@ -866,23 +815,23 @@ function utoa(str) {
   }));
 }
 
-var basicAuthHeader = function basicAuthHeader(userpass) {
+var basicAuthHeader = function (userpass) {
   return "Basic " + utoa(userpass.u + ":" + userpass.p);
 };
 
-var langToMode = function langToMode(lang, variant) {
+var langToMode = function (lang, variant) {
   return lang + "|" + lang + "_" + variant;
 };
 
-var modeToDropdown = function modeToDropdown(m) {
-  var a = $('<a>').text(m.src + "_" + m.trgsuff).on('click', function (_ev) {
+var modeToDropdown = function (m) {
+  let a = $('<a>').text(m.src + "_" + m.trgsuff).on('click', function (_ev) {
     window.location.search = '?lang=' + m.src + "&variant=" + m.trgsuff;
   });
-  var li = $('<li class="mode ma2">').append(a);
+  let li = $('<li class="mode ma2">').append(a);
   $('#modes').append(li);
 };
 
-var initSpinner = function initSpinner(editorElement) {
+var initSpinner = function (editorElement) {
   $("#spinner").hide();
   $(editorElement).removeClass("divvun-loading");
   $(document).ajaxStart(function () {
@@ -898,11 +847,11 @@ var initSpinner = function initSpinner(editorElement) {
   });
 };
 
-var groupBy = function groupBy(list, keyGetter) {
-  var map = new Map();
-  list.forEach(function (item) {
-    var key = keyGetter(item);
-    var collection = map.get(key);
+var groupBy = function (list, keyGetter) {
+  const map = new Map();
+  list.forEach(item => {
+    const key = keyGetter(item);
+    const collection = map.get(key);
     if (!collection) {
       map.set(key, [item]);
     } else {
@@ -912,7 +861,7 @@ var groupBy = function groupBy(list, keyGetter) {
   return map;
 };
 
-var searchToObject = function searchToObject() {
+var searchToObject = function () {
   var pairs = window.location.search.substring(1).split("&"),
       obj = {};
   for (var i in pairs) {
@@ -926,7 +875,7 @@ var searchToObject = function searchToObject() {
   return obj;
 };
 
-var safeSetItem = function safeSetItem(key, value) {
+var safeSetItem = function (key, value) {
   if (value && value.constructor && value.constructor.name === "Set") {
     window.localStorage.setItem(key, JSON.stringify(Array.from(value)));
   } else {
@@ -934,7 +883,7 @@ var safeSetItem = function safeSetItem(key, value) {
   }
 };
 
-var safeGetItem = function safeGetItem(key, fallback) {
+var safeGetItem = function (key, fallback) {
   var fromStorage = window.localStorage.getItem(key);
   if (fromStorage == null) {
     return fallback;
@@ -955,11 +904,11 @@ var safeGetItem = function safeGetItem(key, fallback) {
   }
 };
 
-var overrideWwSpellcheck = function overrideWwSpellcheck() {
+let overrideWwSpellcheck = function () {
   $(".writr").attr("spellcheck", "false");
 };
 
-var mkQuill = function mkQuill(wwEditor) {
+var mkQuill = function (wwEditor) {
   $('#divvun-editor').remove();
   if (!wwEditor.canEditArticle()) {
     alert("WoodWing says we can't edit the article.");
@@ -972,25 +921,25 @@ var mkQuill = function mkQuill(wwEditor) {
     }
     return;
   }
-  var editorWrapper = $('<div id="divvun-editor">');
+  let editorWrapper = $('<div id="divvun-editor">');
   $(window.document.body).append(editorWrapper);
 
   var mode = "sme|sme_spell";
-  var wwTexts = wwEditor.getTexts();
-  var _divvuneditor = new DivvunEditor(editorWrapper.get()[0], mode, wwTexts, wwEditor);
+  let wwTexts = wwEditor.getTexts();
+  let _divvuneditor = new DivvunEditor(editorWrapper.get()[0], mode, wwTexts, wwEditor);
   overrideWwSpellcheck();
 };
 
-var PLUGINDIR = "../../config/plugins/divvungc/";
+let PLUGINDIR = "../../config/plugins/divvungc/";
 
-var initCss = function initCss(file) {
+var initCss = function (file) {
   var el = $('<link/>');
   el.attr('rel', 'stylesheet');
   el.attr('href', file);
   $('head').append(el);
 };
 
-var init = function init() {
+var init = function () {
   initCss(PLUGINDIR + "quill.snow.css");
   initCss(PLUGINDIR + "style.css?2");
   initL10n("sme", PLUGINDIR);
@@ -1000,7 +949,7 @@ var init = function init() {
       console.log('Digital Article opened', article);
       DigitalEditorSdk.addToolbarButton({
         label: 'Divvun',
-        onAction: function onAction() {
+        onAction: function () {
           mkQuill(article.getEditor());
         }
       });
@@ -1009,7 +958,7 @@ var init = function init() {
     var _subMenuId = EditorUiSdk.createAction({
       label: 'Divvun',
       icon: PLUGINDIR + "divvun.ico",
-      click: function click() {
+      click: function () {
         mkQuill(EditorTextSdk);
       }
     });
