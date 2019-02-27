@@ -45,7 +45,7 @@ deploydigitest: all
 	rsync -avh release/ woodwingdigitest:/Applications/MAMP/htdocs/Enterprise/config/plugins/divvungc/
 
 deployprod: all
-	rsync -avh release/ woodwingprod:/opt/local/apache2/htdocs/Enterprise/config/plugins/divvungc/
+	rsync -avh release/ woodwingprod:/Applications/MAMP/htdocs/Enterprise/config/plugins/divvungc/
 
 watch:
 	git ls-files |grep -v ^lib | entr -rc make
