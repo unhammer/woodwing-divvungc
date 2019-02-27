@@ -40,25 +40,22 @@ rsync -avh release/ woodwingserver:/Applications/MAMP/htdocs/Enterprise/config/p
 #+END_SRC
 
 
-Then add these lines to the =plugins= object of
-=/Applications/MAMP/htdocs/Enterprise/contentstation/config.js=:
+Then under the =plugins= object in
+=/Applications/MAMP/htdocs/Enterprise/contentstation/config.js=, add
+the path to the bundle under =printEditor= and =contentStation=, e.g.
 
-#+BEGIN_SRC js
-     printEditor: [
-       '../config/plugins/divvungc/bundle.js'
-     ]
-#+END_SRC
-
-making it e.g.
 #+BEGIN_SRC js
    plugins: {
-     contentStation: [
+     digitalEditor: [
+       '../config/plugins/divvungc/bundle.js'
      ],
      printEditor: [
        '../config/plugins/divvungc/bundle.js'
      ]
    }
 #+END_SRC
+
+if you have no other plugins there already.
 
 ** Backend
 URL to the backend is currently hardcoded in the JavaScript. If you
