@@ -56,10 +56,11 @@ sanity_grep "zcheck" '".",1,2' "${res}"
 # expect an error for ' .' here):
 mkdir -p data
 unzip -d data "${zcheck}"
-if [[ ! -f data/spellchecker.bin ]]; then
-    # TODO: currently missing from zcheck:
-    cg-comp "${HOME}"/divvun/PREFIX/share/giella/"${iso639}"/spellchecker.cg3 data/spellchecker.bin
-fi
+
+# TODO: currently messed up in zcheck:
+rm -f data/spellchecker.bin
+cg-comp "${HOME}"/divvun/PREFIX/share/giella/"${iso639}"/spellchecker.cg3 data/spellchecker.bin
+
 # apertium-apy expects no shebangs nor newlines, should be fixed
 # upstream but workaround for now:
 divvun-gen-sh -j data/pipespec.xml "${pipename}" \
