@@ -4,7 +4,7 @@ set -e -u
 
 iso639=sme
 bcp47=se
-package=giella-"${iso639}"
+package=giella-"${iso639}"-speller
 pipename="${iso639}"spell
 modename="${iso639}"-"${iso639}"_spell
 
