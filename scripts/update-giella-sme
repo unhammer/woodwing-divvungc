@@ -49,8 +49,8 @@ sanity_grep () {
 
 # Fail if we don't give any error message for space-before-punct-mark:
 # (assuming all languages mark this as an error for their default pipeline …)
-res=$(echo ' .' | divvun-checker --archive "${zcheck}")
-sanity_grep "zcheck" '".",1,2' "${res}"
+res=$(echo '. .' | divvun-checker --archive "${zcheck}")
+sanity_grep "zcheck" '".",2,3' "${res}"
 
 # Fail if pipename in pipespec doesn't give any JSON (though we can't
 # expect an error for ' .' here):
