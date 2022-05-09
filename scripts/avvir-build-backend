@@ -37,9 +37,9 @@ sudo port -N install py35-tornado  # apy
 sudo port -N install apertium      # apy (for apertium-deshtml/rehtml)
 sudo port -N install pkgconfig     # hfst-ospell
 
-svn co http://visl.sdu.dk/svn/visl/tools/vislcg3/trunk/ vislcg3-trunk
+git clone https://github.com/GrammarSoft/cg3
 (
-    cd vislcg3-trunk
+    cd cg3
     ./cmake.sh -DCMAKE_INSTALL_PREFIX="${PREFIX}"
     make -j3
     make install
