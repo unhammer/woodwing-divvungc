@@ -16,10 +16,12 @@ WORKDIR /
 
 ENV iso639=sme
 ENV bcp47=se
-ENV package=giella-"${iso639}"-speller
-ENV pipename="${iso639}"spell
-ENV modename="${iso639}"-"${iso639}"_spell
+ENV pipename="${iso639}"gramrelease
 ENV zcheck=./usr/share/voikko/4/"${bcp47}".zcheck
+
+# This is the modename expected by the woodwing js scripts, don't
+# change without altering js scripts!:
+ENV modename="${iso639}"-"${iso639}"_spell
 
 RUN mkdir /data
 RUN unzip -d data "${zcheck}"
