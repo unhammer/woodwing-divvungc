@@ -1,0 +1,5 @@
+#!/bin/bash
+
+docker build -t divvun:woodwing-base -f Dockerfile.base .  \
+    && docker build -t divvun:woodwing-apy -f Dockerfile . \
+    && docker run -p2737:2737 -it divvun:woodwing-apy

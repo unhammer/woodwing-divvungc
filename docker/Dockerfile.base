@@ -1,0 +1,20 @@
+# We use nightly packages:
+FROM debian:sid-slim
+
+ENV LC_ALL C.UTF-8
+
+RUN apt-get -q update
+RUN apt-get -q install -y curl sudo lsb-release git
+RUN curl -sS https://apertium.projectjj.com/apt/install-nightly.sh | sudo bash
+RUN apt-get -q update
+RUN apt-get -q install -y  \
+        python3-minimal    \
+        python3-tornado    \
+        cg3                \
+        hfst               \
+        hfst-ospell        \
+        divvun-gramcheck   \
+        apertium           \
+        giella-sme         \
+        giella-sme-speller \
+        unzip
