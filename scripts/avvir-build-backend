@@ -97,7 +97,7 @@ git clone https://github.com/divvun/woodwing-divvungc
 )
 
 # We just run this from the source dir:
-git clone -b giellatekno https://github.com/goavki/apertium-apy
+git clone -b giellatekno https://github.com/apertium/apertium-apy
 (
     cd apertium-apy
     LC_ALL=en_US.UTF-8 printf "\xc3\xa1vvir:test\n" >users
