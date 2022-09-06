@@ -69,6 +69,11 @@ change the lines
     this.subdir = "";
 #+END_SRC
 
-If you wish to run the backend from your own server, see the file
-[[file:scripts/avvir-build-backend][scripts/avvir-build-backend]] for build instructions. This is currently
-a bit complicated, we hope to make it easier in the future.
+If you wish to run the backend from your own server:
+
+#+begin_src sh
+    docker run --name apy -p2737:2737 -it unhammer/divvun:woodwing-apy
+#+end_src
+
+Use [[docker/build][docker/build]] to rebuild images (the one above is built for arm64,
+e.g. M1 macs).

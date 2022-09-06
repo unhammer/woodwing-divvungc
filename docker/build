@@ -5,7 +5,7 @@
 # `docker buildx build --platform linux/amd64,linux/arm64` etc. but
 # that gives https://stackoverflow.com/q/68267348/69663
 
-docker build -t divvun:woodwing-tools -f Dockerfile.tools .      \
-    && docker build -t divvun:woodwing-data -f Dockerfile.data . \
-    && docker build -t divvun:woodwing-apy -f Dockerfile.apy .   \
-    && docker run -p2737:2737 -it divvun:woodwing-apy
+    docker build -t unhammer/divvun:woodwing-tools -f Dockerfile.tools . \
+ && docker build -t unhammer/divvun:woodwing-data  -f Dockerfile.data  . \
+ && docker build -t unhammer/divvun:woodwing-apy   -f Dockerfile.apy   . \
+ && docker run --name apy -p2737:2737 -it unhammer/divvun:woodwing-apy
