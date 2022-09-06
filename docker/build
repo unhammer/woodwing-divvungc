@@ -1,5 +1,11 @@
 #!/bin/bash
 
-docker build -t divvun:woodwing-base -f Dockerfile.base .  \
-    && docker build -t divvun:woodwing-apy -f Dockerfile . \
+# TODO: This will run using emulation if compiled from Linux – build
+# on arm64 to use on arm64! Preferably we could cross-build with
+# `docker buildx build --platform linux/amd64,linux/arm64` etc. but
+# that gives https://stackoverflow.com/q/68267348/69663
+
+docker build -t divvun:woodwing-tools -f Dockerfile.tools .      \
+    && docker build -t divvun:woodwing-data -f Dockerfile.data . \
+    && docker build -t divvun:woodwing-apy -f Dockerfile.apy .   \
     && docker run -p2737:2737 -it divvun:woodwing-apy

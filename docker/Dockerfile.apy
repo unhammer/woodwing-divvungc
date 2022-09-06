@@ -1,0 +1,17 @@
+FROM divvun:woodwing-data
+
+ENV LC_ALL C.UTF-8
+
+# We get apertium-apy from git, since we need divvunWoodwing branch
+
+RUN git clone -b divvunWoodwing https://github.com/apertium/apertium-apy /apy
+
+WORKDIR /
+
+EXPOSE 2737
+CMD python3 /apy/servlet.py      \
+        /modes                   \
+        --max-idle-secs 3600     \
+        --restart-pipe-after 200 \
+        --max-pipes-per-pair 2   \
+        --max-users-per-pipe 1

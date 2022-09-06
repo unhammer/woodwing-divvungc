@@ -1,0 +1,22 @@
+FROM debian:sid-slim
+
+ENV LC_ALL C.UTF-8
+
+RUN apt-get -q update
+RUN apt-get -q install -y  \
+        curl               \
+        sudo               \
+        lsb-release        \
+        git                \
+        python3-minimal    \
+        python3-tornado    \
+        libutfcpp-dev      \
+        unzip
+
+# It'd be nice to use nightlies, but since they're not built for arm64
+# we have to manually compile:
+RUN curl -Ss https://apertium.projectjj.com/debian-apertium-all-dev.sh >debian-apertium-all-dev.sh
+RUN sed -i.tmp1 '/test.runall/d' debian-apertium-all-dev.sh
+RUN sed -i.tmp2 's/foma.foma/& ; cmake ./' debian-apertium-all-dev.sh
+RUN sed -i.tmp3 '/svn co.*CorpusTools/,/popd/d' debian-apertium-all-dev.sh
+RUN bash -x debian-apertium-all-dev.sh
