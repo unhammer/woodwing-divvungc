@@ -495,7 +495,14 @@ DivvunEditor.prototype.exitAndApply = function () {
 
       reps.map(function (r) {
         console.log("In component " + iText + ", replace substring from " + r.beg + " to " + r.end + " with '" + r.rep + "'" + " – with wwEditor", wwEditor);
-        if (!wwEditor.replaceText(iText, r.beg, r.end, r.rep)) {
+        let success = false;
+        if (r.rep == "") {
+          console.log("Rep was empty, instead replacing from " + (r.end + 1) + " with text[" + r.end + "]: '" + texts[iText][r.end - 1] + "'");
+          success = wwEditor.replaceText(iText, r.beg, r.end + 1, texts[iText][r.end - 1]);
+        } else {
+          success = wwEditor.replaceText(iText, r.beg, r.end, r.rep);
+        }
+        if (!success) {
           console.warn('Could not replaceText due to error ' + wwEditor.getErrorMessage());
         }
       });
