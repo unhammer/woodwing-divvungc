@@ -10,7 +10,7 @@
 
 "use strict";
 
-const PLUGIN_VERSION = "0.1.0";
+const PLUGIN_VERSION = "0.1.1";
 
 var debug = window.location.protocol === "file:";
 var log = debug ? console.log.bind(window.console) : function (_ignore) {};
@@ -497,13 +497,13 @@ DivvunEditor.prototype.exitAndApply = function () {
           }
         });
       }
-
+      const wwTexts = this.wwTexts;
       reps.map(function (r) {
-        console.log("In component " + iText + ", replace substring from " + r.beg + " to " + r.end + " with '" + r.rep + "'" + " – with wwEditor", wwEditor);
+        console.log("In component " + iText + ", replace substring from " + r.beg + " to " + r.end + " with '" + r.rep + "'" + ", in wwEditor", wwEditor);
         let success = false;
         if (r.rep == "") {
-          console.log("Rep was empty, instead replacing from " + (r.end + 1) + " with text[" + r.end + "]: '" + texts[iText][r.end - 1] + "'");
-          success = wwEditor.replaceText(iText, r.beg, r.end + 1, texts[iText][r.end - 1]);
+          console.log("Empty replacement, instead replacing until " + (r.end + 1) + " with text[" + r.end + "]: '" + wwTexts[iText][r.end] + "'");
+          success = wwEditor.replaceText(iText, r.beg, r.end + 1, wwTexts[iText][r.end]);
         } else {
           success = wwEditor.replaceText(iText, r.beg, r.end, r.rep);
         }
