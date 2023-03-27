@@ -12,6 +12,7 @@
 /* :: type userpass = {u: string, p: string} */
 /* :: type mode = { src: string, trglang: string, trgsuff: string } */
 
+const PLUGIN_VERSION = "0.1.0";
 
 var debug = window.location.protocol === "file:";
 var log = debug ? console.log.bind(window.console) : function(_ignore) {};
@@ -348,7 +349,7 @@ var DivvunEditor = function(editorWrapper/*:HTMLElement*/, mode/*:string*/, wwTe
     .append(editorDiv)
     .append(repmenu);
   let toolbarOptions = [
-    ['check', 'exitandapply', 'cancel'],
+    ['check', 'exitandapply', 'cancel', 'version'],
   ];
   this.quill = new Quill(editorDiv.get()[0], {
     modules: {
@@ -357,7 +358,8 @@ var DivvunEditor = function(editorWrapper/*:HTMLElement*/, mode/*:string*/, wwTe
         handlers: {
           check: function(_val) { self.check(); },
           exitandapply: function(_val) { self.exitAndApply(); },
-          cancel: function(_val) { self.cancel(); }
+          cancel: function(_val) { self.cancel(); },
+          version: function (_val) { window.alert("woodwing-divvungc.js v" + PLUGIN_VERSION); }
         }
       }
     },

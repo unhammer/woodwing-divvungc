@@ -1,6 +1,9 @@
-.ql-check, .ql-cancel, .ql-exitandapply {
+.ql-check, .ql-cancel, .ql-exitandapply, .ql-version {
     margin-left: 4em;
     margin-right: 4em;
+}
+.ql-version {
+    float: right;
 }
 .ql-check::after {
     content: "✓";
@@ -12,6 +15,13 @@
 }
 .ql-cancel::after {
     content: "avbryt";
+    display: inline-block;
+    width: 100%;
+    font-size: larger;
+    margin-top: -1em;
+}
+.ql-version::after {
+    content: "om";
     display: inline-block;
     width: 100%;
     font-size: larger;

@@ -10,6 +10,8 @@
 
 "use strict";
 
+const PLUGIN_VERSION = "0.1.0";
+
 var debug = window.location.protocol === "file:";
 var log = debug ? console.log.bind(window.console) : function (_ignore) {};
 
@@ -277,7 +279,7 @@ var DivvunEditor = function (editorWrapper, mode, wwTextsRaw, wwEditor) {
   let repmenu = $('<div id="divvun-repmenu" style="display:none" role="listbox"><div style="left: 0px;" id="divvun-repmenu_co" role="presentation"><table id="divvun-repmenu_tbl" role="presentation" cellspacing="0" border="0" cellpadding="0"></table></div></div>');
   let editorDiv = $('<div spellcheck="false">');
   $(editorWrapper).append(editorDiv).append(repmenu);
-  let toolbarOptions = [['check', 'exitandapply', 'cancel']];
+  let toolbarOptions = [['check', 'exitandapply', 'cancel', 'version']];
   this.quill = new Quill(editorDiv.get()[0], {
     modules: {
       toolbar: {
@@ -291,6 +293,9 @@ var DivvunEditor = function (editorWrapper, mode, wwTextsRaw, wwEditor) {
           },
           cancel: function (_val) {
             self.cancel();
+          },
+          version: function (_val) {
+            window.alert("woodwing-divvungc.js v" + PLUGIN_VERSION);
           }
         }
       }
